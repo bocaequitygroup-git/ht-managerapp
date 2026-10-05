@@ -10,8 +10,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Segoe UI",sys
 header{background:var(--hd);color:var(--hdi);padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
 header b{font-size:17px;flex:1;min-width:0}header small{display:block;font-weight:400;opacity:.75;font-size:12px}
 .dot{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}.dot.off{color:#ff9a8e}
-main{max-width:720px;margin:0 auto;padding:12px 14px calc(88px + env(safe-area-inset-bottom,0px))}
-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--hd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
+main{max-width:720px;margin:0 auto;padding:12px 14px calc(24px + env(safe-area-inset-bottom,0px))}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:4}
+.tabs button{flex:none;background:none;border:2px solid transparent;border-radius:10px;font:inherit;font-weight:700;padding:8px 12px;min-height:44px;color:var(--ink);white-space:nowrap}.tabs button.on{background:var(--acc);color:var(--on)}
+.who{line-height:1.15;text-align:right}.who small{display:block}.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:17px}
+header{flex-wrap:wrap}nav{display:none;position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--hd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
 nav button{flex:1;background:none;border:0;color:var(--hdi);opacity:.7;font:inherit;font-size:13px;font-weight:700;padding:10px 2px;min-height:48px;border-radius:10px}
 nav button.on{opacity:1;background:var(--acc);color:var(--on)}
 h1{font-size:22px;margin:4px 0 10px}h2{font-size:17px;margin:18px 0 8px}.mut{color:var(--mut);font-size:14px}
@@ -42,7 +45,7 @@ const GSR=()=>typeof google!=='undefined'&&!!(google.script&&google.script.run);
 /* tolerant getter: first present key, ignoring case, spaces and underscores */
 const nk=k=>String(k).toLowerCase().replace(/[\s_]/g,'');
 const g=(o,...ks)=>{if(!o)return'';for(const k of ks){if(o[k]!=null&&o[k]!=='')return o[k];const f=Object.keys(o).find(x=>nk(x)===nk(k));if(f&&o[f]!=null&&o[f]!=='')return o[f]}return''};
-let SESS='',ME=null,V='board',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='';   // session token lives in memory only
+let SESS='',ME=null,V='today',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='';   // session token lives in memory only
 let D={beds:{},cohorts:[],tasks:[],exceptions:[],workers:[]},X={open:[],done:[],scout:[],moves:[]};
 const today=()=>new Date().toISOString().slice(0,10),now=()=>Date.now();
 const el=s=>(g(s,'end')||(g(s,'status')==='PAUSED'?g(s,'pauseAt'):now()))-g(s,'start')-(+g(s,'pausedMs')||0);
@@ -82,15 +85,20 @@ function sCard(s,tools){const p=g(s,'status')==='PAUSED';
  return`<div class="card ${esc(g(s,'status'))}"><div class="r"><div class="g"><span class="tag ${esc(g(s,'status'))}">${p?'PAUSED · '+esc(g(s,'reason')||'no reason'):esc(g(s,'status')||'DONE')}</span>
  <div style="font-weight:800;font-size:18px;margin-top:4px">${esc(g(s,'bed'))} · ${esc(g(s,'act'))}</div><div class="mut">${esc(g(s,'worker'))}${g(s,'cohort')?' · '+esc(g(s,'cohort')):''}${g(s,'qty')?' · '+Math.round(g(s,'qty')*10)/10+' lb':''}</div></div>
  <div class="t" data-t="${esc(g(s,'id'))}">${fmt(el(s))}</div></div>${tools?`<div class="btns"><button class="btn" onclick="SH={k:'re',id:'${esc(g(s,'id'))}'};draw()">Reassign</button><button class="btn w" onclick="SH={k:'cl',id:'${esc(g(s,'id'))}'};draw()">Close out</button></div>`:''}</div>`}
-function vBoard(){const o=X.open,pa=o.filter(s=>g(s,'status')==='PAUSED').length;
- return`<h1>Field board</h1><div class="sum"><div><b>${o.length-pa}</b><span class="mut">running</span></div><div><b>${pa}</b><span class="mut">paused</span></div><div><b>${new Set(o.map(s=>g(s,'worker'))).size}</b><span class="mut">workers out</span></div></div>`
- +(o.length?o.map(s=>sCard(s,1)).join(''):'<p class="mut">No open sessions right now.</p>')}
-function vToday(){const T=D.tasks.filter(t=>g(t,'status')!=='DONE'&&g(t,'status')!=='CANCELLED'),G={'Must Do':[],Attention:[],Routine:[]};T.forEach(t=>G[pri(t)].push(t));
- return`<h1>Today's queue</h1>`+Object.entries(G).map(([k,a])=>`<h2>${k} <span class="mut">(${a.length})</span></h2>`+(a.map(t=>`<div class="card ${k.split(' ')[0]}"><div class="r"><div class="g"><b>${esc(g(t,'bed'))} · ${esc(g(t,'act'))}</b><div class="mut">${esc(g(t,'worker')||'Unassigned')} · due ${esc(g(t,'date'))}</div></div><span class="tag ${g(t,'status')==='RUNNING'?'':'LOW'}">${esc(g(t,'status'))}</span></div></div>`).join('')||'<p class="mut">Nothing here.</p>')).join('')}
-function vHarvest(){const q=HQ.trim().toUpperCase(),rd=D.cohorts.filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&(!q||g(c,'bed').includes(q)||(parseBed(q)&&g(c,'bed')===parseBed(q)))),
- hs=[...X.open,...X.done].filter(s=>g(s,'act')==='Harvest');
- return`<h1>Harvest</h1><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hList()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div>
- <h2>Ready to harvest</h2><div id="hl">${hList(rd)}</div><h2>Harvest sessions</h2>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||'<p class="mut">No harvests in the last 48 hours.</p>'}`}
+const bshort=b=>String(b||'').replace(/^HT-/,''),Q=()=>X.queue||D.tasks.filter(t=>g(t,'status')==='ASSIGNED'),
+ cropOf=id=>{const c=D.cohorts.find(x=>g(x,'id')===id);return c?g(c,'cropName','crop'):''};
+function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort');
+ return`<div class="card ${q?'flat':p?'PAUSED':''}"><b style="font-size:19px">${esc(g(o,'worker'))}</b>
+ <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${g(o,'desc')?`<div class="mut">${esc(g(o,'desc'))}</div>`:''}${g(o,'assignedBy')?`<div class="mut">Assigned by ${esc(g(o,'assignedBy'))}</div>`:''}
+ <div style="margin-top:6px"><span class="tag ${q?'LOW':p?'PAUSED':''}">${q?'Not started':p?'Paused':'In progress'}</span> <span class="mut">${q?'assigned, waiting':p?esc(g(o,'reason')||'paused'):'running'}</span></div>
+ <div class="${q?'mut':'t'}" ${q?'':`data-t="${id}"`} style="margin-top:4px">${q?'Waiting for worker to start':fmt(el(o))}</div>
+ <div class="kv"><div><span>Bed</span><b>${esc(bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
+ <div class="btns"><button class="btn" onclick="SH={k:'re',id:'${id}',q:${q?1:0}};draw()">Reassign</button>${!q?`<button class="btn w" onclick="SH={k:'cl',id:'${id}'};draw()">Close out</button>`:''}</div></div>`}
+function vToday(){const o=X.open,q=Q(),n=o.length+q.length;
+ return`<h1>Open field sessions</h1><p class="mut" style="margin:-6px 0 12px">${n} open, updated ${last?new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'-'}</p>`
+ +(n?o.map(x=>oCard(x,0)).join('')+q.map(x=>oCard(x,1)).join(''):'<p class="mut">No open sessions right now.</p>')}
+function vReady(){return`<h1>Harvest ready</h1><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hList()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div><div id="hl" style="margin-top:10px">${hList()}</div>`}
+function vComplete(){const hs=[...X.open,...X.done].filter(s=>g(s,'act')==='Harvest');return`<h1>Harvest complete</h1>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||'<p class="mut">No harvests in the last 48 hours.</p>'}`}
 function hList(rd){const q=HQ.trim().toUpperCase();rd=rd||D.cohorts.filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&(!q||g(c,'bed').includes(q)||g(c,'bed')===parseBed(q)));
  return rd.map(c=>`<div class="card Must"><div class="r"><div class="g"><b>${esc(g(c,'bed'))} · ${esc(g(c,'cropName','crop'))}</b><div class="mut">${esc(g(c,'id'))} · planted ${esc(g(c,'dob'))} · ${esc(g(c,'cases'))} cases target · vestibule ${esc(g(c,'vest'))}</div></div><span class="tag">${esc(g(c,'status').replace('_',' '))}</span></div>
  <div class="btns"><button class="btn p" onclick="SH={k:'as',bed:'${esc(g(c,'bed'))}'};draw()">Assign harvest</button></div></div>`).join('')||'<p class="mut">No harvest-ready beds match.</p>'}
@@ -99,22 +107,24 @@ function vScout(){const S=X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL
  return`<h1>Scouting findings</h1>${ch('sev',['HIGH','MEDIUM','LOW'])}${ch('dom',['Pest pressure','Disease','Plant condition','Soil & water','Weeds'])}<input placeholder="Filter by bed, e.g. B2" value="${esc(FL.q)}" oninput="FL.q=this.value;$('#sl').innerHTML=sList()" style="margin:6px 0 10px"><div id="sl">${sList(S)}</div>`}
 function sList(S){S=S||X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase())));
  return S.map(f=>`<div class="card ${esc(g(f,'sev'))}"><div class="r"><div class="g"><b>${esc(g(f,'bed'))} · ${esc(g(f,'domain'))}</b></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div><div>${esc(g(f,'notes'))}</div><div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div></div>`).join('')||'<p class="mut">No findings match.</p>'}
-function vLog(){return`<h1>Activity log</h1><h2>Completed (48 h)</h2>${X.done.map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed yet.</p>'}
- <h2>Reassignments</h2>${X.moves.map(m=>`<div class="card flat"><b>${esc(g(m,'detail'))}</b><div class="mut">by ${esc(g(m,'by'))} · ${esc(g(m,'at'))}</div></div>`).join('')||'<p class="mut">No hand-offs logged.</p>'}`}
+function vLog(){return`<h1>Activity log</h1>${X.done.map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed in the last 48 hours.</p>'}`}
+function vMoves(){return`<h1>Reassignments</h1>${X.moves.map(m=>`<div class="card flat"><b>${esc(g(m,'detail'))}</b><div class="mut">by ${esc(g(m,'by'))} · ${esc(g(m,'at'))}</div></div>`).join('')||'<p class="mut">No hand-offs logged.</p>'}`}
 function vLogin(){return`<div id="login"><h1>VPOS Manager</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
  <label class="mut" for="u">Worker ID</label><input id="u" autocapitalize="none" autocomplete="username"><div style="height:10px"></div><label class="mut" for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
  <button class="btn p" style="width:100%;margin-top:14px" ${busy?'disabled':''} onclick="login()">${busy?'Signing in…':'Sign in'}</button>${WEB_APP_URL||GSR()?'':'<p class="mut">Demo mode · any ID, PIN 1234</p>'}</div>`}
-function sheet(){const s=SH,ses=[...X.open].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
- if(s.k==='re')h=`<h1>Reassign ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}</h1><p class="mut">Currently ${esc(g(ses,'worker'))}</p><select id="sw">${W}</select><textarea id="sn" rows="2" placeholder="Note (optional)" style="margin-top:8px"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mReassign',{id:'${esc(s.id)}',worker:$('#sw').value,note:$('#sn').value},'Reassigned')">Reassign</button>`;
+function sheet(){const s=SH,ses=[...X.open,...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
+ if(s.k==='re')h=`<h1>Reassign ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}</h1><p class="mut">Currently ${esc(g(ses,'worker'))}</p><select id="sw">${W}</select><textarea id="sn" rows="2" placeholder="Note (optional)" style="margin-top:8px"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="reDo()">Reassign</button>`;
  if(s.k==='cl')h=`<h1>Close out ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}?</h1><p class="mut">${esc(g(ses,'worker'))}'s timer stops now.</p><textarea id="sn" rows="3" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mClose',{id:'${esc(s.id)}',note:$('#sn').value},'Session closed')">Confirm close</button>`;
  if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
  return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog">${h}<button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Cancel</button></div></div>`}
+function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'taskAction':'mReassign',SH.q?{...d,op:'reassign'}:d,'Reassigned')}
 const draw=()=>{$('#ov').innerHTML=SH?sheet():''};
-const TABS=[['board','Board'],['today','Today'],['harvest','Harvest'],['scout','Scouting'],['log','Log']];
+const TABS=[['today','Today'],['ready','Harvest ready'],['complete','Harvest complete'],['log','Activity log'],['moves','Reassignments'],['scout','Scouting']];
 function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw()}
- const v={board:vBoard,today:vToday,harvest:vHarvest,scout:vScout,log:vLog}[V]();
- a.innerHTML=`<header><b>VPOS Manager<small>${esc(ME.name)} · ${esc(ME.role)}${last?' · synced '+new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''}</small></b><span class="dot ${on?'':'off'}">${on?'● Connected':'● Offline'}</span><button class="btn" style="min-height:40px;padding:4px 12px" onclick="load()" aria-label="Refresh">⟳</button><button class="btn" style="min-height:40px;padding:4px 12px" onclick="out()">Log Out</button></header>
- <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main><nav>${TABS.map(t=>`<button class="${V===t[0]?'on':''}" onclick="V='${t[0]}';render()">${t[1]}</button>`).join('')}</nav>`;draw()}
+ const v={today:vToday,ready:vReady,complete:vComplete,log:vLog,moves:vMoves,scout:vScout}[V]();
+ a.innerHTML=`<header><b>VPOS Manager</b><span class="dot ${on?'':'off'}">${on?'● Connected':'● Offline'}</span><div class="who"><b>${esc(ME.name)}</b><small>${esc(ME.role)}</small></div><button class="btn" style="min-height:40px;padding:4px 12px" onclick="load()">Refresh</button><button class="btn" style="min-height:40px;padding:4px 12px" onclick="out()">Log out</button></header>
+ <div class="tabs">${TABS.map(t=>`<button class="${V===t[0]?'on':''}" onclick="V='${t[0]}';render()">${t[1]}</button>`).join('')}</div>
+ <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main>`;draw()}
 
 /* ---------- camera QR (BarcodeDetector) ---------- */
 let cs=null,ct=0;
@@ -126,17 +136,18 @@ function camStop(){clearInterval(ct);if(cs){cs.getTracks().forEach(t=>t.stop());
 
 /* ---------- demo backend (WEB_APP_URL = '') ---------- */
 function mock(a,d){const n=now(),H=36e5;
- if(!mock.s)mock.s={D:{beds:{},workers:['Amani','Baraka','Chebet','Dawa'],tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',date:today()},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'ASSIGNED',date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',date:today()}],
+ if(!mock.s)mock.s={D:{beds:{},workers:['lisa','Amani','Baraka','Chebet','Dawa'],tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',date:today()},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'ASSIGNED',date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',date:today()}],
   cohorts:[{id:'C-21',bed:'HT-B2-03',status:'HARVEST_READY',crop:'KAL',cropName:'Kale',dob:'2026-07-28',cases:40,vest:'PASS'},{id:'C-22',bed:'HT-B5-06',status:'HARVESTING',crop:'CHD',cropName:'Swiss Chard',dob:'2026-08-02',cases:30,vest:'PASS'}],
   exceptions:[{id:'X1',bed:'HT-B1-02',sev:'MEDIUM',text:'Aphids on lower leaves',open:true}]},
   X:{open:[{id:'S1',worker:'Chebet',bed:'HT-B4-01',act:'Irrigation check',status:'RUNNING',start:n-18*6e4,pausedMs:0,cohort:'C-18'},{id:'S2',worker:'Baraka',bed:'HT-B5-06',act:'Harvest',status:'PAUSED',reason:'Lunch',start:n-95*6e4,pausedMs:0,pauseAt:n-20*6e4,cohort:'C-22'}],
   done:[{id:'S0',worker:'Dawa',bed:'HT-B3-02',act:'Weeding',status:'DONE',start:n-5*H,end:n-4*H,pausedMs:0}],
-  scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[]}};
+  scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[],queue:[{id:'T9',worker:'lisa',bed:'HT-B1-02',act:'Pull Plastic & Drip',desc:'Remove subsurface drip tape, black plastic mulch, stakes, and trellising from the harvested bed using the appropriate tractor-mounted lifter/winder or other ranch equipment.',assignedBy:'Chris Kenny',status:'ASSIGNED',date:today()}]}};
  const m=mock.s;
- if(a==='login'){if(d.pin!=='1234')throw new Error('Wrong ID or PIN');return{ok:true,session:'demo',user:{name:'Demo Manager',role:'Manager'},data:m.D}}
- if(a==='mReassign'){const s=m.X.open.find(x=>x.id===d.id);if(s)s.worker=d.worker;m.X.moves.unshift({at:'now',by:'Demo Manager',detail:d.id+' → '+d.worker})}
+ if(a==='login'){if(d.pin!=='1234')throw new Error('Wrong ID or PIN');return{ok:true,session:'demo',user:{name:'Chris Kenny',role:'Manager'},data:m.D}}
+ if(a==='mReassign'){const s=m.X.open.find(x=>x.id===d.id);if(s)s.worker=d.worker;m.X.moves.unshift({at:'now',by:'Chris Kenny',detail:d.id+' → '+d.worker})}
  if(a==='mClose'){const i=m.X.open.findIndex(x=>x.id===d.id);if(i>=0){const s=m.X.open.splice(i,1)[0];s.status='DONE';s.end=n;m.X.done.unshift(s)}}
  if(a==='dispatch')d.items.forEach(i=>m.D.tasks.push({id:'T'+n,bed:d.bed,act:i.act,worker:i.worker,status:'ASSIGNED',date:d.date}));
+ if(a==='taskAction'){const t=m.X.queue.find(x=>x.id===d.id);if(t)t.worker=d.worker}
  return{ok:true,data:m.D,x:m.X}}
 
 addEventListener('online',()=>{on=true;load()});addEventListener('offline',()=>{on=false;render()});
