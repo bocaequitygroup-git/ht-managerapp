@@ -35,6 +35,7 @@ input,select,textarea{width:100%;padding:12px;border:2px solid var(--line);borde
 .sh{background:var(--bg);width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom,0px))}
 #login{max-width:380px;margin:12vh auto 0;padding:0 14px}#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:20;display:none}
 video{width:100%;border-radius:12px;background:#000}
+.rb{margin-top:6px;padding:6px 10px;border-radius:10px;background:rgba(184,110,0,.14);border-left:4px solid var(--att);font-size:14px}
 </style></head><body>
 <div id="app"></div><div id="ov"></div><div id="toast"></div>
 <script>
@@ -87,9 +88,11 @@ function sCard(s,tools){const p=g(s,'status')==='PAUSED';
  <div class="t" data-t="${esc(g(s,'id'))}">${fmt(el(s))}</div></div>${tools?`<div class="btns"><button class="btn" onclick="SH={k:'re',id:'${esc(g(s,'id'))}'};draw()">Reassign</button><button class="btn w" onclick="SH={k:'cl',id:'${esc(g(s,'id'))}'};draw()">Close out</button></div>`:''}</div>`}
 const bshort=b=>String(b||'').replace(/^HT-/,''),Q=()=>X.queue||D.tasks.filter(t=>g(t,'status')==='ASSIGNED'),
  cropOf=id=>{const c=D.cohorts.find(x=>g(x,'id')===id);return c?g(c,'cropName','crop'):''};
+const reP=r=>{try{return typeof r==='string'?(r?JSON.parse(r):null):r}catch(e){return null}};
+const reBox=r=>{r=reP(r);return r&&r.from?`<div class="rb">↪ Reassigned from <b>${esc(r.from)}</b> to <b>${esc(r.to)}</b>${r.note?' · “'+esc(r.note)+'”':''}</div>`:''};
 function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort');
  return`<div class="card ${q?'flat':p?'PAUSED':''}"><b style="font-size:19px">${esc(g(o,'worker'))}</b>
- <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${g(o,'desc')?`<div class="mut">${esc(g(o,'desc'))}</div>`:''}${g(o,'assignedBy')?`<div class="mut">Assigned by ${esc(g(o,'assignedBy'))}</div>`:''}
+ <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${g(o,'desc')?`<div class="mut">${esc(g(o,'desc'))}</div>`:''}${g(o,'assignedBy')?`<div class="mut">Assigned by ${esc(g(o,'assignedBy'))}</div>`:''}${reBox(g(o,'re'))}
  <div style="margin-top:6px"><span class="tag ${q?'LOW':p?'PAUSED':''}">${q?'Not started':p?'Paused':'In progress'}</span> <span class="mut">${q?'assigned, waiting':p?esc(g(o,'reason')||'paused'):'running'}</span></div>
  <div class="${q?'mut':'t'}" ${q?'':`data-t="${id}"`} style="margin-top:4px">${q?'Waiting for worker to start':fmt(el(o))}</div>
  <div class="kv"><div><span>Bed</span><b>${esc(bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
@@ -108,7 +111,9 @@ function vScout(){const S=X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL
 function sList(S){S=S||X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase())));
  return S.map(f=>`<div class="card ${esc(g(f,'sev'))}"><div class="r"><div class="g"><b>${esc(g(f,'bed'))} · ${esc(g(f,'domain'))}</b></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div><div>${esc(g(f,'notes'))}</div><div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div></div>`).join('')||'<p class="mut">No findings match.</p>'}
 function vLog(){return`<h1>Activity log</h1>${X.done.map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed in the last 48 hours.</p>'}`}
-function vMoves(){return`<h1>Reassignments</h1>${X.moves.map(m=>`<div class="card flat"><b>${esc(g(m,'detail'))}</b><div class="mut">by ${esc(g(m,'by'))} · ${esc(g(m,'at'))}</div></div>`).join('')||'<p class="mut">No hand-offs logged.</p>'}`}
+function vMoves(){const all=[...X.open,...X.done,...Q()];
+ return`<h1>Reassignments</h1>`+(X.moves.map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
+  return`<div class="card flat"><b>${esc(x[2]||'?')} → ${esc(x[3]||g(h,'detail'))}</b>${it?`<div>${esc(bshort(g(it,'bed')))} · ${esc(g(it,'act'))}</div>`:''}${x[4]?`<div class="mut">“${esc(x[4])}”</div>`:''}<div class="mut">by ${esc(g(h,'by'))} · ${esc(g(h,'at'))}</div></div>`}).join('')||'<p class="mut">No hand-offs logged.</p>')}
 function vLogin(){return`<div id="login"><h1>VPOS Manager</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
  <label class="mut" for="u">Worker ID</label><input id="u" autocapitalize="none" autocomplete="username"><div style="height:10px"></div><label class="mut" for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
  <button class="btn p" style="width:100%;margin-top:14px" ${busy?'disabled':''} onclick="login()">${busy?'Signing in…':'Sign in'}</button>${WEB_APP_URL||GSR()?'':'<p class="mut">Demo mode · any ID, PIN 1234</p>'}</div>`}
@@ -117,7 +122,7 @@ function sheet(){const s=SH,ses=[...X.open,...Q()].find(x=>g(x,'id')===s.id),W=w
  if(s.k==='cl')h=`<h1>Close out ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}?</h1><p class="mut">${esc(g(ses,'worker'))}'s timer stops now.</p><textarea id="sn" rows="3" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mClose',{id:'${esc(s.id)}',note:$('#sn').value},'Session closed')">Confirm close</button>`;
  if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
  return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog">${h}<button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Cancel</button></div></div>`}
-function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'taskAction':'mReassign',SH.q?{...d,op:'reassign'}:d,'Reassigned')}
+function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'mReassignTask':'mReassign',d,'Reassigned')}
 const draw=()=>{$('#ov').innerHTML=SH?sheet():''};
 const TABS=[['today','Today'],['ready','Harvest ready'],['complete','Harvest complete'],['log','Activity log'],['moves','Reassignments'],['scout','Scouting']];
 function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw()}
@@ -144,7 +149,7 @@ function mock(a,d){const n=now(),H=36e5;
   scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[],queue:[{id:'T9',worker:'lisa',bed:'HT-B1-02',act:'Pull Plastic & Drip',desc:'Remove subsurface drip tape, black plastic mulch, stakes, and trellising from the harvested bed using the appropriate tractor-mounted lifter/winder or other ranch equipment.',assignedBy:'Chris Kenny',status:'ASSIGNED',date:today()}]}};
  const m=mock.s;
  if(a==='login'){if(d.pin!=='1234')throw new Error('Wrong ID or PIN');return{ok:true,session:'demo',user:{name:'Chris Kenny',role:'Manager'},data:m.D}}
- if(a==='mReassign'){const s=m.X.open.find(x=>x.id===d.id);if(s)s.worker=d.worker;m.X.moves.unshift({at:'now',by:'Chris Kenny',detail:d.id+' → '+d.worker})}
+ if(a==='mReassign'||a==='mReassignTask'){const s=[...m.X.open,...m.X.queue].find(x=>x.id===d.id);if(s){const from=s.worker;s.worker=d.worker;s.re={from,to:d.worker,by:'Chris Kenny',note:d.note};m.X.moves.unshift({at:'now',by:'Chris Kenny',detail:d.id+': '+from+' -> '+d.worker+(d.note?' ('+d.note+')':'')})}}
  if(a==='mClose'){const i=m.X.open.findIndex(x=>x.id===d.id);if(i>=0){const s=m.X.open.splice(i,1)[0];s.status='DONE';s.end=n;m.X.done.unshift(s)}}
  if(a==='dispatch')d.items.forEach(i=>m.D.tasks.push({id:'T'+n,bed:d.bed,act:i.act,worker:i.worker,status:'ASSIGNED',date:d.date}));
  if(a==='taskAction'){const t=m.X.queue.find(x=>x.id===d.id);if(t)t.worker=d.worker}
