@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>VPOS Manager · HT</title>
+<title>HT-ManagerApp</title>
 <style>
 :root{--bg:#eef1ee;--card:#fff;--ink:#0d1b14;--mut:#53645a;--line:#cdd6cf;--hd:#0d1b14;--hdi:#f2f6f2;--acc:#0b6b3a;--on:#fff;--must:#c62d1f;--att:#b86e00;--ok:#0b6b3a}
 @media(prefers-color-scheme:dark){:root{--bg:#0b130e;--card:#15221a;--ink:#eef4ee;--mut:#9fb2a5;--line:#2a3d30;--hd:#050b07;--acc:#52c985;--on:#06110a;--must:#ff7a6b;--att:#f0b04a;--ok:#52c985}}
@@ -90,9 +90,9 @@ const bshort=b=>String(b||'').replace(/^HT-/,''),Q=()=>X.queue||D.tasks.filter(t
  cropOf=id=>{const c=D.cohorts.find(x=>g(x,'id')===id);return c?g(c,'cropName','crop'):''};
 const reP=r=>{try{return typeof r==='string'?(r?JSON.parse(r):null):r}catch(e){return null}};
 const reBox=r=>{r=reP(r);return r&&r.from?`<div class="rb">↪ Reassigned from <b>${esc(r.from)}</b> to <b>${esc(r.to)}</b>${r.note?' · “'+esc(r.note)+'”':''}</div>`:''};
-function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort');
+function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort'),tk=D.tasks.find(t=>g(t,'id')===g(o,'task'))||{},ds=g(o,'desc')||g(tk,'desc'),ab=g(o,'assignedBy')||g(tk,'by');
  return`<div class="card ${q?'flat':p?'PAUSED':''}"><b style="font-size:19px">${esc(g(o,'worker'))}</b>
- <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${g(o,'desc')?`<div class="mut">${esc(g(o,'desc'))}</div>`:''}${g(o,'assignedBy')?`<div class="mut">Assigned by ${esc(g(o,'assignedBy'))}</div>`:''}${reBox(g(o,'re'))}
+ <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${ds?`<div class="mut">${esc(ds)}</div>`:''}${ab?`<div class="mut">Assigned by ${esc(ab)}</div>`:''}${reBox(g(o,'re'))}
  <div style="margin-top:6px"><span class="tag ${q?'LOW':p?'PAUSED':''}">${q?'Not started':p?'Paused':'In progress'}</span> <span class="mut">${q?'assigned, waiting':p?esc(g(o,'reason')||'paused'):'running'}</span></div>
  <div class="${q?'mut':'t'}" ${q?'':`data-t="${id}"`} style="margin-top:4px">${q?'Waiting for worker to start':fmt(el(o))}</div>
  <div class="kv"><div><span>Bed</span><b>${esc(bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
@@ -114,20 +114,20 @@ function vLog(){return`<h1>Activity log</h1>${X.done.map(s=>sCard(s,0)).join('')
 function vMoves(){const all=[...X.open,...X.done,...Q()];
  return`<h1>Reassignments</h1>`+(X.moves.map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
   return`<div class="card flat"><b>${esc(x[2]||'?')} → ${esc(x[3]||g(h,'detail'))}</b>${it?`<div>${esc(bshort(g(it,'bed')))} · ${esc(g(it,'act'))}</div>`:''}${x[4]?`<div class="mut">“${esc(x[4])}”</div>`:''}<div class="mut">by ${esc(g(h,'by'))} · ${esc(g(h,'at'))}</div></div>`}).join('')||'<p class="mut">No hand-offs logged.</p>')}
-function vLogin(){return`<div id="login"><h1>VPOS Manager</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
+function vLogin(){return`<div id="login"><h1>HT-ManagerApp</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
  <label class="mut" for="u">Worker ID</label><input id="u" autocapitalize="none" autocomplete="username"><div style="height:10px"></div><label class="mut" for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
  <button class="btn p" style="width:100%;margin-top:14px" ${busy?'disabled':''} onclick="login()">${busy?'Signing in…':'Sign in'}</button>${WEB_APP_URL||GSR()?'':'<p class="mut">Demo mode · any ID, PIN 1234</p>'}</div>`}
 function sheet(){const s=SH,ses=[...X.open,...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
  if(s.k==='re')h=`<h1>Reassign ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}</h1><p class="mut">Currently ${esc(g(ses,'worker'))}</p><select id="sw">${W}</select><textarea id="sn" rows="2" placeholder="Note (optional)" style="margin-top:8px"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="reDo()">Reassign</button>`;
  if(s.k==='cl')h=`<h1>Close out ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}?</h1><p class="mut">${esc(g(ses,'worker'))}'s timer stops now.</p><textarea id="sn" rows="3" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mClose',{id:'${esc(s.id)}',note:$('#sn').value},'Session closed')">Confirm close</button>`;
- if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
+ if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><label class="mut" for="sd" style="display:block;margin-top:8px">What is it about? (shown to the worker)</label><textarea id="sd" rows="3">Harvest the ready cohort, weigh each tote, then complete the session.</textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',desc:$('#sd').value,items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
  return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog">${h}<button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Cancel</button></div></div>`}
 function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'mReassignTask':'mReassign',d,'Reassigned')}
 const draw=()=>{$('#ov').innerHTML=SH?sheet():''};
 const TABS=[['today','Today'],['ready','Harvest ready'],['complete','Harvest complete'],['log','Activity log'],['moves','Reassignments'],['scout','Scouting']];
 function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw()}
  const v={today:vToday,ready:vReady,complete:vComplete,log:vLog,moves:vMoves,scout:vScout}[V]();
- a.innerHTML=`<header><b>VPOS Manager</b><span class="dot ${on?'':'off'}">${on?'● Connected':'● Offline'}</span><div class="who"><b>${esc(ME.name)}</b><small>${esc(ME.role)}</small></div><button class="btn" style="min-height:40px;padding:4px 12px" onclick="load()">Refresh</button><button class="btn" style="min-height:40px;padding:4px 12px" onclick="out()">Log out</button></header>
+ a.innerHTML=`<header><b>HT-ManagerApp</b><span class="dot ${on?'':'off'}">${on?'● Connected':'● Offline'}</span><div class="who"><b>${esc(ME.name)}</b><small>${esc(ME.role)}</small></div><button class="btn" style="min-height:40px;padding:4px 12px" onclick="load()">Refresh</button><button class="btn" style="min-height:40px;padding:4px 12px" onclick="out()">Log out</button></header>
  <div class="tabs">${TABS.map(t=>`<button class="${V===t[0]?'on':''}" onclick="V='${t[0]}';render()">${t[1]}</button>`).join('')}</div>
  <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main>`;draw()}
 
