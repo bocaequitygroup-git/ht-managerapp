@@ -41,6 +41,15 @@ video{width:100%;border-radius:12px;background:#000}
 .list{max-height:280px;overflow:auto;border:2px solid var(--line);border-radius:12px;padding:4px;background:var(--card)}
 .list .btn{display:block;width:100%;text-align:left;margin:2px 0;min-height:42px;padding:8px 10px;border-color:transparent}.list .btn.on{background:var(--acc);color:var(--on)}
 label.f{display:block;margin:12px 0 4px}
+nav svg{width:18px;height:18px;flex:none}
+nav .bd.soft{background:var(--mut)}
+.bn{background:var(--must);color:#fff;padding:10px 14px;text-align:center;font-weight:700;font-size:14px}
+.err[hidden]{display:none}
+.bl{background:none;border:0;padding:2px 0;font:inherit;font-weight:800;color:var(--acc);text-decoration:underline;cursor:pointer;min-height:32px;text-align:left}
+.meter{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:8px 0}.meter i{display:block;height:100%;background:var(--acc)}
+.card[role=button]{cursor:pointer}
+details>summary{min-height:32px}
+.sh h1:focus{outline:none}
 </style></head><body>
 <div id="app"></div><div id="ov"></div><div id="toast"></div>
 <script>
@@ -52,13 +61,13 @@ const GSR=()=>typeof google!=='undefined'&&!!(google.script&&google.script.run);
 const nk=k=>String(k).toLowerCase().replace(/[\s_]/g,'');
 const g=(o,...ks)=>{if(!o)return'';for(const k of ks){if(o[k]!=null&&o[k]!=='')return o[k];const f=Object.keys(o).find(x=>nk(x)===nk(k));if(f&&o[f]!=null&&o[f]!=='')return o[f]}return''};
 const AF0=()=>({bed:'',cat:'ALL',q:'',acts:[],ws:[],date:'',desc:''});
-let SESS='',ME=null,V='board',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='',BF='ALL',TF='ALL',AF=AF0();   // session token lives in memory only
+let SESS='',ME=null,V='board',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='',BF='ALL',TF='ALL',AF=AF0(),TQ=0,GRW=0,LV='done',LW='',LB='';   // session token lives in memory only
 let D={beds:{},cohorts:[],tasks:[],exceptions:[],workers:[],catalog:[]},X={open:[],done:[],scout:[],moves:[]};
-const today=()=>new Date().toISOString().slice(0,10),now=()=>Date.now();
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')},now=()=>Date.now();
 const el=s=>(g(s,'end')||(g(s,'status')==='PAUSED'?g(s,'pauseAt'):now()))-g(s,'start')-(+g(s,'pausedMs')||0);
 const fmt=ms=>{let s=Math.max(0,Math.floor(ms/1e3));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);s%=60;return(h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')};
 const mn=x=>x<60?x+' min':Math.floor(x/60)+' h '+x%60+' min';
-const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2800)};
+const toast=(m,bad)=>{const t=$('#toast');t.textContent=m;t.setAttribute('role','status');t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',bad?6000:2800)};
 
 /* ---------- API: Apps Script /exec (text/plain JSON) or built-in demo ---------- */
 async function api(a,d){
@@ -70,8 +79,11 @@ async function api(a,d){
   on=true;if(!r.ok){if(r.auth)out('Session expired. Please sign in again.');throw new Error(r.error||'Server error')}return r}
  catch(e){if(e.name==='AbortError')throw new Error('Request timed out. Check signal.');if(e instanceof TypeError){on=false;throw new Error('Cannot reach the server.')}throw e}
  finally{clearTimeout(t)}}
-async function load(){if(busy||!SESS)return;busy=1;try{const r=await api('mBoard');D=r.data||D;X=r.x||X;last=now();ERR=''}catch(e){ERR=e.message}busy=0;render()}
-async function act(a,d,msg){try{await api(a,d);SH=null;toast(msg);await load()}catch(e){toast(e.message)}}
+let again=0,acting=0;
+async function load(){if(!SESS)return;if(busy){again=1;return}busy=1;try{const r=await api('mBoard');D=r.data||D;X=r.x||X;last=now();ERR=''}catch(e){ERR=e.message}busy=0;render();if(again){again=0;load()}}
+const serr=m=>{const e=$('#serr');if(e&&SH){e.textContent=m;e.hidden=false;e.scrollIntoView({block:'nearest'})}else toast(m,1)};
+async function run(fn,msg,redraw){if(acting)return;acting=1;try{await fn();SH=null;draw();toast(msg);await load()}catch(e){if(redraw){await load();draw()}serr(e.message)}acting=0}
+const act=(a,d,msg)=>run(()=>api(a,d),msg);
 
 /* ---------- auth: Manager / Founder only ---------- */
 async function login(){const id=$('#u').value.trim(),pin=$('#p').value;if(!id||!pin){LE='Enter your Worker ID and PIN.';return render()}
@@ -92,15 +104,54 @@ const bedList=()=>{const o=[];for(let b=1;b<=6;b++)for(let n=1;n<=6;n++)o.push(`
 const BS=id=>(D.beds&&D.beds[id])||{},turnOf=id=>g(BS(id),'turn')||null;
 /* crew tasks: the backend returns one row per crew member; fold them back into one task */
 function cg(){const m={},o=[];(D.tasks||[]).forEach(t=>{const id=g(t,'id');if(!m[id]){m[id]={id,bed:g(t,'bed'),act:g(t,'act'),status:g(t,'tstatus')||g(t,'status'),vBy:g(t,'vBy'),vAt:g(t,'vAt'),vNote:g(t,'vNote'),crew:[]};o.push(m[id])}m[id].crew.push(t)});return o}
-/* Today = beds that need action today: harvest, turnover, holds, open exceptions. p: 1 Must Do, 2 Attention */
-function todayItems(){const L=[];Object.keys(D.beds||{}).forEach(id=>{const b=D.beds[id],st=g(b,'status'),ex=exOpen(id),t=turnOf(id),why=[];let p=3;
-  if(st==='HARVEST_READY'){why.push('Harvest ready');p=1}
-  if(st==='HARVESTING'){why.push('Harvesting');p=Math.min(p,2)}
-  if((st==='POST_HARVEST'||st==='TURNOVER')&&t){why.push((st==='TURNOVER'?'Turnover':'Post-harvest')+' · '+t.progress+' steps · day '+t.days+' · SLA '+t.sla);p=Math.min(p,t.sla==='RED'?1:2)}
-  if(st==='HOLD'){why.push('On hold'+(g(b,'hold')?': '+g(b,'hold'):''));p=Math.min(p,2)}
-  if(ex.length){why.push(ex.length+' open exception'+(ex.length>1?'s':'')+': '+g(ex[0],'text'));p=Math.min(p,ex.some(e=>g(e,'sev')==='HIGH')?1:2)}
-  if(why.length)L.push({id,st,p,why,c:(D.cohorts||[]).find(c=>g(c,'bed')===id)})});
- return L.sort((a,b)=>a.p-b.p||a.id.localeCompare(b.id))}
+/* ---------- derived: dates, beds, cohorts, harvest window, Today queue ---------- */
+const BLOCK=['NO CROP','BAD CROP','NO PLANT DATE','BAD BED','BLOCK/BED MISMATCH','BED OVERLAP'];
+const pd=s=>/^\d{4}-\d{2}-\d{2}/.test(String(s||''))?new Date(String(s).slice(0,10)+'T00:00:00'):null,
+ dd=(a,b)=>{const x=pd(a),y=pd(b);return x&&y?Math.round((x-y)/864e5):NaN},
+ fday=s=>{const d=pd(s);return d?d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}):''},
+ dayHead=ms=>{const d=new Date(ms),n=new Date(),y=new Date(n.getTime()-864e5),ds=x=>x.toDateString();return ds(d)===ds(n)?'Today':ds(d)===ds(y)?'Yesterday':d.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})},
+ atMs=a=>{const s=String(a||'');if(/^today/i.test(s))return now();const t=Date.parse(s.replace(' ','T'));return isNaN(t)?NaN:t};
+const cropNm=id=>{const c=(D.crops||[]).find(x=>g(x,'id')===id);return c?g(c,'name'):id};
+const cohOn=b=>(D.cohorts||[]).filter(c=>g(c,'bed')===b);
+const STG={PRE_PLANTING:'Waiting to plant',ACTIVE:'Growing',HARVEST_READY:'Ready to harvest',HARVESTING:'Harvesting',COMPLETED:'Harvest complete'},
+ BST={AVAILABLE:'Available',RESERVED:'Reserved',OCCUPIED:'Growing',HARVEST_READY:'Harvest ready',HARVESTING:'Harvesting',POST_HARVEST:'Post-harvest',TURNOVER:'Turnover',HOLD:'On hold'};
+const plantItem=id=>(VV().plant||[]).find(x=>x.cohort===id),finishItem=b=>(VV().finish||[]).find(x=>x.bed===b),relItem=b=>(VV().release||[]).find(x=>x.bed===b),openWin=id=>(VV().harvest||[]).find(x=>x.cohort===id);
+/* harvest window: from the cohort (min/max, needs the updated backend) or, failing that, the Verify board's open-window list */
+function win(c){const id=g(c,'id'),w=openWin(id),min=g(c,'min')||(w?w.min:''),max=g(c,'max')||(w?w.max:'');return{min,max,open:!!w||(!!min&&dd(min,today())<=0)}}
+function winText(c){const w=win(c);if(!w.min)return'';const d=dd(w.min,today());return(d>0?'Window opens '+fday(w.min)+' (in '+d+' day'+(d>1?'s':'')+')':'Window open since '+fday(w.min)+(d<0?' ('+(-d)+' day'+(d<-1?'s':'')+' ago)':''))+(w.max?', closes '+fday(w.max):'')}
+const bedBtn=(b,l)=>`<button class="bl" data-a="${esc(b)}" onclick="go('bed',this.dataset.a)">${esc(l||b)}</button>`;
+const B=(l,k,a,c,b,st)=>`<button class="btn ${c||''}"${st?` style="${st}"`:''} data-a="${esc(a)}" data-b="${esc(b||'')}" onclick="go('${k}',this.dataset.a,this.dataset.b)">${l}</button>`;
+const KEY=`onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"`;
+const openBeds=()=>Object.keys(D.beds||{}).filter(id=>['AVAILABLE','RESERVED'].includes(g(BS(id),'status'))&&!turnOf(id)).sort();
+/* turnover checklist: the required steps are the catalog rows flagged req; every one not in the bed's "left" list is done */
+function turnSteps(bed){const t=turnOf(bed);if(!t)return[];const left=(t.left||[]).map(a=>a.id),ri=relItem(bed),rs={};(ri?ri.steps:[]).forEach(s=>{rs[s.id]=s});
+ let C=(D.catalog||[]).filter(a=>a.req&&a.req!=='NO');if(!C.length)C=t.left||[];
+ return C.map(a=>{const ok=!left.includes(a.id),r=rs[a.id];return{id:a.id,name:a.name,ok,st:r?r.st:ok?'OK':'MISSING'}})}
+/* Today: p 1 Must do, 2 Attention, 3 Routine */
+function tq(){const t=today(),o=[],add=(p,bed,title,detail,btn,sort)=>o.push({p,bed:bed||'',title,detail,btn,sort:String(sort||'9999')}),crew=b=>[...(X.open||[]),...Q()].some(s=>g(s,'bed')===b&&g(s,'act')==='Harvest');
+ (D.proposals||[]).forEach(p=>{const id=g(p,'id'),b=g(p,'bed'),k=g(p,'check');add(1,b,'Approve a bed for '+cropNm(g(p,'crop')),'Planned '+(fday(g(p,'plant'))||'no date')+(b?', suggested '+b:', no bed suggested')+(BLOCK.includes(k)?' · blocked: '+k:''),B('Review','prop',id,'p'),g(p,'plant'))});
+ (D.cohorts||[]).forEach(c=>{const id=g(c,'id'),bed=g(c,'bed'),st=g(c,'status'),cr=g(c,'cropName','crop'),dob=g(c,'dob');
+  if(st==='PRE_PLANTING'){const d=dd(dob,t),pi=plantItem(id);
+   if(pi)add(d<=3?1:3,bed,'Verify the bed is ready for '+cr,(d<=0?'Planting was due ':'Planting planned ')+fday(dob)+' · '+pi.verified+' of '+pi.total+' prep steps verified',B('Verify bed','vp',id,'p'),dob);
+   else add(d<=0?2:3,bed,(d<=0?'Planting due: ':'Waiting to plant: ')+cr,'Planned '+(fday(dob)||'no date')+'. Workers record planting in the field app.',B('Open bed','bed',bed),dob)}
+  else if(st==='ACTIVE'){const w=win(c),d=w.min?dd(w.min,t):NaN;
+   if(w.open)add(1,bed,'Check harvest maturity of '+cr,winText(c),B('Verify ready','vh',id,'p'),w.min);
+   else if(d<=3)add(2,bed,cr+' harvest window opens soon',winText(c),B('Open bed','bed',bed),w.min);
+   else add(3,bed,'Growing: '+cr,winText(c)||'Planted '+(fday(dob)||dob),B('Open bed','bed',bed),w.min||'9999')}
+  else if(st==='HARVEST_READY'||st==='HARVESTING'){const f=finishItem(bed);
+   if(f)add(1,bed,'Mark harvest finished for '+cr,f.sessions+' session'+(f.sessions>1?'s':'')+' done · '+f.lbs+' lb',B('Mark finished','vf',bed,'p'),'0');
+   else if(crew(bed))add(3,bed,cr+' harvest in progress','Mark it finished once the totes are in',B('Open bed','bed',bed),'0');
+   else add(1,bed,'Assign a harvest crew for '+cr,'Maturity verified, nobody assigned yet',B('Assign harvest','as',bed,'p'),'0')}});
+ Object.keys(D.beds||{}).forEach(id=>{const t2=turnOf(id),st=g(BS(id),'status'),ri=relItem(id);
+  if(t2){if(ri)add(1,id,'Verify turnover and release the bed',ri.verified+' of '+ri.total+' steps verified · day '+t2.days+' · SLA '+t2.sla,B('Release bed','vb',id,'p'),'0');
+   else add(t2.sla==='RED'?1:t2.sla==='YELLOW'?2:3,id,'Finish turnover steps',(t2.remaining!=null?t2.remaining:'?')+' step'+(t2.remaining===1?'':'s')+' left · day '+t2.days+' · SLA '+t2.sla,B('Checklist','tu',id),'1')}
+  if(st==='HOLD')add(2,id,'Bed is on hold',g(BS(id),'hold')||'No reason recorded',B('Open bed','bed',id),'2')});
+ (X.open||[]).filter(s=>g(s,'status')==='PAUSED').forEach(s=>add(2,g(s,'bed'),'Paused: '+g(s,'act'),g(s,'worker')+(g(s,'reason')?': '+g(s,'reason'):''),B('Reassign','re',g(s,'id')),'0'));
+ Q().forEach(s=>{const late=g(s,'date')&&dd(g(s,'date'),t)<0;add(late?2:3,g(s,'bed'),g(s,'act')+', not started',g(s,'worker')+', assigned '+(fday(g(s,'date'))||'no date'),B('Reassign','re',g(s,'id'),'','1'),g(s,'date'))});
+ (D.exceptions||[]).filter(e=>g(e,'open')).forEach(e=>add(g(e,'sev')==='HIGH'?1:2,g(e,'bed'),(g(e,'sev')||'Open')+' exception',g(e,'text'),B('Resolve','ex',g(e,'id')),'1'));
+ (X.scout||[]).filter(f=>g(f,'sev')==='HIGH'&&(isNaN(atMs(g(f,'at')))||now()-atMs(g(f,'at'))<3*864e5)).forEach(f=>add(2,g(f,'bed'),'High-severity scouting finding',g(f,'domain')+(g(f,'notes')?': '+g(f,'notes'):''),B('View','find',g(f,'id')),'1'));
+ const pn=(VV().pending||[]).length;if(pn)add(2,'',pn+' finished step'+(pn>1?'s':'')+' waiting for verification','Workers finished these. Sign them off on the Verify tab.',B('Open Verify','tab','verify'),'1');
+ return o.sort((a,b)=>a.p-b.p||a.sort.localeCompare(b.sort)||a.bed.localeCompare(b.bed))}
 
 /* ---------- cards ---------- */
 function sCard(s,tools){const p=g(s,'status')==='PAUSED';
@@ -114,7 +165,7 @@ function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'c
  <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${ds?`<div class="mut">${esc(ds)}</div>`:''}${ab?`<div class="mut">Assigned by ${esc(ab)}</div>`:''}${reBox(g(o,'re'))}
  <div style="margin-top:6px"><span class="tag ${q?'LOW':p?'PAUSED':''}">${q?'Not started':p?'Paused':'In progress'}</span> <span class="mut">${q?'assigned, waiting':p?esc(g(o,'reason')||'paused'):'running'}</span></div>
  <div class="${q?'mut':'t'}" ${q?'':`data-t="${id}"`} style="margin-top:4px">${q?'Waiting for worker to start':fmt(el(o))}</div>
- <div class="kv"><div><span>Bed</span><b>${esc(bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
+ <div class="kv"><div><span>Bed</span><b>${bedBtn(g(o,'bed'),bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
  <div class="btns"><button class="btn" onclick="SH={k:'re',id:'${id}',q:${q?1:0}};draw()">Reassign</button>${!q?`<button class="btn w" onclick="SH={k:'cl',id:'${id}'};draw()">Close out</button>`:''}</div></div>`}
 
 /* ---------- Board: open field sessions ---------- */
@@ -125,11 +176,14 @@ function vBoard(){const o=X.open||[],q=Q(),w=o.filter(x=>g(x,'status')!=='PAUSED
  <div class="chips">${CH.map(c=>`<button class="btn ${BF===c[0]?'on':''}" onclick="BF='${c[0]}';render()">${c[1]}<span>${F[c[0]].length}</span></button>`).join('')}</div>`
  +(L.length?L.map(x=>oCard(x[0],x[1])).join(''):'<p class="mut">No sessions match. Use Assign task to give someone work.</p>')}
 
-/* ---------- Today: beds that need action ---------- */
-function vToday(){const L=todayItems(),C=['','Must','Attention','flat'],P=['','Must do','Attention','Routine'];
- return`<h1>Today</h1><p class="mut" style="margin:0 0 10px">Beds that need action today: harvest, turnover, holds and open exceptions.</p>`
- +(L.length?L.map(i=>`<div class="card ${C[i.p]}"><div class="r"><div class="g"><b style="font-size:18px">${esc(i.id)}</b>${i.c?` <span class="mut">· ${esc(g(i.c,'cropName','crop'))} · ${esc(g(i.c,'id'))}</span>`:''}</div><span class="tag ${i.p===1?'HIGH':i.p===2?'MEDIUM':'LOW'}">${P[i.p]}</span></div>
-  ${i.why.map(w=>`<div class="mut">${esc(w)}</div>`).join('')}<div class="btns"><button class="btn" onclick="AF.bed='${esc(i.id)}';V='assign';render();scrollTo(0,0)">Assign task</button></div></div>`).join(''):'<p class="mut">Nothing needs action today.</p>')}
+/* ---------- Today: what is waiting on you ---------- */
+const none=t=>`<p class="mut">${t}</p>`,secN=(t,n,body)=>`<h2>${esc(t)} <span class="tag LOW">${n}</span></h2>${body}`;
+function vToday(){const q=tq(),by=k=>q.filter(i=>i.p===k),mu=by(1),at=by(2),ro=by(3),shown=TQ?ro:ro.slice(0,8),
+ row=i=>`<div class="card ${['','Must','Attention','flat'][i.p]}"><div class="r"><div class="g">${i.bed?`<b>${bedBtn(i.bed)}</b>`:''}<div style="font-weight:700">${esc(i.title)}</div><div class="mut">${esc(i.detail)}</div></div><div style="flex:none">${i.btn}</div></div></div>`;
+ return`<h1>Today</h1><p class="mut" style="margin:0 0 4px">${esc(fday(today()))}. Built from what is waiting on you right now.</p>`
+ +sec('Must do',mu.length,mu.map(row).join('')||none('Nothing urgent. Check Attention next.'))
+ +sec('Attention',at.length,at.map(row).join('')||none('Nothing needs attention.'))
+ +sec('Routine',ro.length,(shown.map(row).join('')+(ro.length>8?`<button class="btn" style="width:100%" onclick="TQ=!TQ;render()">${TQ?'Show fewer':'Show all '+ro.length}</button>`:''))||none('No routine items.'))}
 
 /* ---------- Verify: every manager sign-off in one place (data: X.verify from mBoard; steps come from ACTIVITY_REFERENCE) ---------- */
 const VV=()=>X.verify||{};
@@ -163,34 +217,55 @@ function vVerify(){const v=VV();if(v.error)return`<h1>Verify</h1><div class="err
  +sec('Work completed in the last 48 hours',tot,LG.length?logHtml(LG):no('Nothing was completed or verified in the last 48 hours.'))}
 
 /* ---------- Harvest ---------- */
+const hM=c=>{const q=HQ.trim().toUpperCase(),b=g(c,'bed');return!q||b.includes(q)||b===parseBed(q)};
+function hCard(c,k){const id=g(c,'id'),bed=g(c,'bed'),cr=g(c,'cropName','crop'),f=finishItem(bed),wt=winText(c),
+ tg=k==='ready'?['',STG[g(c,'status')]||'Ready']:k==='open'?['MEDIUM','Window open']:['LOW','Growing'];
+ return`<div class="card ${k==='ready'?'Must':k==='open'?'Attention':'flat'}"><div class="r"><div class="g"><b>${bedBtn(bed)} · ${esc(cr)}</b><div class="mut">${esc(id)} · planted ${esc(g(c,'dob'))}${g(c,'cases')?' · '+esc(g(c,'cases'))+' cases target':''}${g(c,'vest')?' · vestibule '+esc(g(c,'vest')):''}</div>${wt?`<div class="mut">${esc(wt)}</div>`:''}</div><span class="tag ${tg[0]}">${esc(tg[1])}</span></div>
+ <div class="btns">${k==='ready'?B('Assign harvest','as',bed,'p')+(f?B('Mark harvest finished','vf',bed,'w'):''):k==='open'?B('Verify ready to harvest','vh',id,'p'):B('Open bed','bed',bed)}</div></div>`}
+function hBody(){const C=D.cohorts||[],R=C.filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&hM(c)),
+ OW=(VV().harvest||[]).map(h=>C.find(c=>g(c,'id')===h.cohort)||{id:h.cohort,bed:h.bed,cropName:h.crop,dob:h.dob}).filter(hM),
+ oid=new Set((VV().harvest||[]).map(h=>h.cohort)),
+ GL=C.filter(c=>g(c,'status')==='ACTIVE'&&!oid.has(g(c,'id'))&&hM(c)).sort((a,b)=>String(win(a).min||'9999').localeCompare(String(win(b).min||'9999'))||g(a,'bed').localeCompare(g(b,'bed'))),
+ sh=GRW?GL:GL.slice(0,6);
+ return sec('Verified, ready to harvest',R.length,R.map(c=>hCard(c,'ready')).join('')||none('No crop is verified for harvest.'))
+ +sec('Window open, not yet verified',OW.length,OW.map(c=>hCard(c,'open')).join('')||none('No growing crop has reached its harvest window.'))
+ +secN('Growing',GL.length,(sh.map(c=>hCard(c,'grow')).join('')+(GL.length>6?`<button class="btn" style="width:100%" onclick="GRW=!GRW;$('#hl').innerHTML=hBody()">${GRW?'Show fewer':'Show all '+GL.length}</button>`:''))||none('No other crops are growing.'))}
 function vHarvest(){const hs=[...(X.open||[]),...(X.done||[])].filter(s=>g(s,'act')==='Harvest');
- return`<h1>Harvest</h1><h2 style="margin-top:6px">Ready to harvest</h2><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hList()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div><div id="hl" style="margin-top:10px">${hList()}</div>
- <h2>Completed in the last 48 hours</h2>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||'<p class="mut">No harvests in the last 48 hours.</p>'}`}
-function hList(rd){const q=HQ.trim().toUpperCase();rd=rd||(D.cohorts||[]).filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&(!q||g(c,'bed').includes(q)||g(c,'bed')===parseBed(q)));
- return rd.map(c=>`<div class="card Must"><div class="r"><div class="g"><b>${esc(g(c,'bed'))} · ${esc(g(c,'cropName','crop'))}</b><div class="mut">${esc(g(c,'id'))} · planted ${esc(g(c,'dob'))} · ${esc(g(c,'cases'))} cases target · vestibule ${esc(g(c,'vest'))}</div></div><span class="tag">${esc(g(c,'status').replace('_',' '))}</span></div>
- <div class="btns"><button class="btn p" onclick="SH={k:'as',bed:'${esc(g(c,'bed'))}'};draw()">Assign harvest</button></div></div>`).join('')||'<p class="mut">No harvest-ready beds match.</p>'}
+ return`<h1>Harvest</h1><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hBody()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div><div id="hl">${hBody()}</div>
+ <h2>Completed in the last 48 hours</h2>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||none('No harvests in the last 48 hours.')}`}
 
 /* ---------- Turnover ---------- */
+const tg2=st=>st==='OK'?'<span class="tag">Done</span>':st==='MISSING'?'<span class="tag MEDIUM">Not done</span>':stTag(st);
+function stepsHtml(bed,asg){const S=turnSteps(bed);return S.map(s=>`<div class="r" style="padding:6px 0;border-top:1px solid var(--line)"><div class="g"><b>${esc(s.id)}</b> ${esc(s.name)}</div>${tg2(s.st)}${asg&&!s.ok?B('Assign','asg',bed,'',s.id,'flex:none;min-height:38px;padding:4px 10px'):''}</div>`).join('')||'<div class="mut">The step list is not available.</div>'}
 function vTurn(){const L=Object.keys(D.beds||{}).map(id=>({id,t:turnOf(id)})).filter(x=>x.t),R={RED:0,YELLOW:1,GREEN:2},cnt=k=>L.filter(x=>x.t.sla===k).length,
  S=L.filter(x=>TF==='ALL'||x.t.sla===TF).sort((a,b)=>R[a.t.sla]-R[b.t.sla]||b.t.days-a.t.days||a.id.localeCompare(b.id)),
- CH=[['ALL','All',L.length],['RED','Red',cnt('RED')],['YELLOW','Yellow',cnt('YELLOW')],['GREEN','Green',cnt('GREEN')]];
+ CH=[['ALL','All',L.length],['RED','Red',cnt('RED')],['YELLOW','Yellow',cnt('YELLOW')],['GREEN','Green',cnt('GREEN')]],OB=openBeds();
  return`<h1>Turnover</h1><p class="mut" style="margin:0 0 4px">Beds between crops, with progress against the turnover SLA.</p>
  <div class="chips">${CH.map(c=>`<button class="btn ${TF===c[0]?'on':''}" onclick="TF='${c[0]}';render()">${c[1]}<span>${c[2]}</span></button>`).join('')}</div>`
- +(S.length?S.map(x=>{const t=x.t,nx=(t.left||[]).slice(0,3).map(a=>a.name).join(', ');return`<div class="card ${t.sla==='RED'?'HIGH':t.sla==='YELLOW'?'MEDIUM':''}"><div class="r"><div class="g"><b style="font-size:18px">${esc(x.id)}</b><div class="mut">${esc(t.phase)} · ${esc(t.progress)} steps · day ${esc(t.days)}</div></div><span class="tag ${t.sla==='RED'?'HIGH':t.sla==='YELLOW'?'MEDIUM':''}">SLA ${esc(t.sla)}</span></div>
-  ${nx?`<div class="mut" style="margin-top:4px">Next: ${esc(nx)}${(t.left||[]).length>3?' +'+((t.left||[]).length-3)+' more':''}</div>`:''}
-  <div class="btns"><button class="btn" onclick="AF.bed='${esc(x.id)}';V='assign';render();scrollTo(0,0)">Assign task</button></div></div>`}).join(''):'<p class="mut">No beds in turnover match.</p>')}
+ +(S.length?S.map(x=>{const t=x.t,id=x.id,done=Math.max(0,(+t.total||0)-(+t.remaining||0)),pct=t.total?Math.round(done/t.total*100):0,first=(t.left||[])[0],nx=(t.left||[]).slice(0,3).map(a=>a.name).join(', '),ri=relItem(id),cl=t.sla==='RED'?'HIGH':t.sla==='YELLOW'?'MEDIUM':'';
+  return`<div class="card ${cl}"><div class="r"><div class="g"><b style="font-size:18px">${bedBtn(id)}</b><div class="mut">${esc(t.phase)} · ${esc(t.progress)} steps · day ${esc(t.days)}</div></div><span class="tag ${cl}">SLA ${esc(t.sla)}</span></div>
+  <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="Turnover progress"><i style="width:${pct}%"></i></div>
+  ${nx?`<div class="mut">Next: ${esc(nx)}${(t.left||[]).length>3?' +'+((t.left||[]).length-3)+' more':''}</div>`:'<div class="mut">All steps done</div>'}
+  <details style="margin-top:6px"><summary class="mut" style="cursor:pointer">Show checklist</summary>${stepsHtml(id,1)}</details>
+  <div class="btns">${first?B('Assign next step','asg',id,'',first.id):B('Assign task','asg',id)}${ri?B('Release bed','vb',id,'p'):''}</div></div>`}).join(''):none('No beds in turnover match.'))
+ +secN('Open beds',OB.length,OB.length?`<div class="chips">${OB.map(b=>`<button class="btn" data-a="${esc(b)}" onclick="go('bed',this.dataset.a)">${esc(bshort(b))}${g(BS(b),'status')==='RESERVED'?'<span>reserved</span>':''}</button>`).join('')}</div>`:none('Every bed has a crop or is in turnover.'))}
 
 /* ---------- Scouting ---------- */
-function vScout(){const S=X.scout||[],ch=(k,l)=>`<div class="chips">${['',...l].map(v=>`<button class="btn ${FL[k]===v?'on':''}" onclick="FL.${k}='${v}';render()">${v||'All'}</button>`).join('')}</div>`;
- return`<h1>Scouting findings</h1>${ch('sev',['HIGH','MEDIUM','LOW'])}${ch('dom',['Pest pressure','Disease','Plant condition','Soil & water','Weeds'])}<input placeholder="Filter by bed, e.g. B2" value="${esc(FL.q)}" oninput="FL.q=this.value;$('#sl').innerHTML=sList()" style="margin:6px 0 10px"><div id="sl">${sList()}</div>`}
+function vScout(){const ch=(k,l)=>`<div class="chips">${['',...l].map(v=>`<button class="btn ${FL[k]===v?'on':''}" onclick="FL.${k}='${v}';render()">${v||'All'}</button>`).join('')}</div>`;
+ return`<h1>Scouting findings</h1>${ch('sev',['HIGH','MEDIUM','LOW'])}${ch('dom',['Pest pressure','Disease','Plant condition','Soil & water','Weeds'])}<input placeholder="Filter by bed, e.g. B2" value="${esc(FL.q)}" oninput="FL.q=this.value;$('#sl').innerHTML=sList()" style="margin:6px 0 10px" aria-label="Filter by bed"><div id="sl">${sList()}</div>`}
 function sList(){const S=(X.scout||[]).filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase())));
- return S.map(f=>`<div class="card ${esc(g(f,'sev'))}"><div class="r"><div class="g"><b>${esc(g(f,'bed'))} · ${esc(g(f,'domain'))}</b></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div><div>${esc(g(f,'notes'))}</div><div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div></div>`).join('')||'<p class="mut">No findings match.</p>'}
+ return S.map(f=>`<div class="card ${esc(g(f,'sev'))}" role="button" tabindex="0" data-a="${esc(g(f,'id'))}" onclick="go('find',this.dataset.a)" ${KEY}><div class="r"><div class="g"><b>${esc(g(f,'bed'))} · ${esc(g(f,'domain'))}</b></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div><div>${esc(g(f,'notes'))}</div><div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div></div>`).join('')||'<p class="mut">No findings match.</p>'}
 
-/* ---------- Log: completed work + reassignments ---------- */
-function vLog(){const all=[...(X.open||[]),...(X.done||[]),...Q()];
- return`<h1>Log</h1><h2 style="margin-top:6px">Completed in the last 48 hours</h2>${(X.done||[]).map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed in the last 48 hours.</p>'}
- <h2>Reassignments</h2>`+((X.moves||[]).map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
-  return`<div class="card flat"><b>${esc(x[2]||'?')} → ${esc(x[3]||g(h,'detail'))}</b>${it?`<div>${esc(bshort(g(it,'bed')))} · ${esc(g(it,'act'))}</div>`:''}${x[4]?`<div class="mut">“${esc(x[4])}”</div>`:''}<div class="mut">by ${esc(g(h,'by'))} · ${esc(g(h,'at'))}</div></div>`}).join('')||'<p class="mut">No hand-offs logged.</p>')}
+/* ---------- Log: completed work (worker and bed filters, day headings) + reassignments ---------- */
+function vLog(){const all=[...(X.open||[]),...(X.done||[]),...Q()],seg=`<div class="chips" role="group" aria-label="Log view">${[['done','Completed work'],['swap','Reassignments']].map(c=>`<button class="btn ${LV===c[0]?'on':''}" aria-pressed="${LV===c[0]}" onclick="LV='${c[0]}';render()">${c[1]}</button>`).join('')}</div>`;
+ if(LV==='swap')return`<h1>Log</h1>${seg}`+((X.moves||[]).map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
+  return`<div class="card flat"><b>${esc(x[2]||'?')} → ${esc(x[3]||g(h,'detail'))}</b>${it?`<div>${esc(bshort(g(it,'bed')))} · ${esc(g(it,'act'))}</div>`:''}${x[4]?`<div class="mut">“${esc(x[4])}”</div>`:''}<div class="mut">by ${esc(g(h,'by'))} · ${esc(g(h,'at'))}</div></div>`}).join('')||'<p class="mut">No hand-offs logged.</p>');
+ const DN=X.done||[],ws=[...new Set(DN.map(s=>g(s,'worker')))].sort(),bs=[...new Set(DN.map(s=>g(s,'bed')))].sort(),
+ L=DN.filter(s=>(!LW||g(s,'worker')===LW)&&(!LB||g(s,'bed')===LB)).sort((a,b)=>(g(b,'end')||0)-(g(a,'end')||0));let last='',rows='';
+ L.forEach(s=>{const h=g(s,'end')?dayHead(g(s,'end')):'No end time';if(h!==last){rows+=`<h2>${esc(h)}</h2>`;last=h}rows+=sCard(s,0)});
+ return`<h1>Log</h1>${seg}<p class="mut" style="margin:0">Work completed in the last 48 hours.</p>
+ <label class="mut f" for="lw">Worker</label><select id="lw" onchange="LW=this.value;render()"><option value="">All workers</option>${ws.map(w=>`<option ${LW===w?'selected':''}>${esc(w)}</option>`).join('')}</select>
+ <label class="mut f" for="lb">Bed</label><select id="lb" onchange="LB=this.value;render()"><option value="">All beds</option>${bs.map(b=>`<option ${LB===b?'selected':''}>${esc(b)}</option>`).join('')}</select>${rows||none('No completed work matches.')}`}
 
 /* ---------- Assign task ---------- */
 function alist(){const C=D.catalog||[],q=AF.q.toLowerCase(),L=C.filter(a=>(AF.cat==='ALL'||a.group===AF.cat)&&(!q||(a.id+' '+a.name).toLowerCase().includes(q)));
@@ -217,7 +292,7 @@ async function assignGo(){const C=D.catalog||[];if(!AF.bed)return toast('Choose 
 function vLogin(){return`<div id="login"><h1>HT Manager</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
  <label class="mut" for="u">Worker ID</label><input id="u" autocapitalize="none" autocomplete="username"><div style="height:10px"></div><label class="mut" for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
  <button class="btn p" style="width:100%;margin-top:14px" ${busy?'disabled':''} onclick="login()">${busy?'Signing in…':'Sign in'}</button>${WEB_APP_URL||GSR()?'':'<p class="mut">Demo mode · any ID, PIN 1234</p>'}</div>`}
-function sheet(){const s=SH,ses=[...(X.open||[]),...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
+function sheet0(){const s=SH,ses=[...(X.open||[]),...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
  if(s.k==='re')h=`<h1>Reassign ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}</h1><p class="mut">Currently ${esc(g(ses,'worker'))}</p><select id="sw">${W}</select><textarea id="sn" rows="2" placeholder="Note (optional)" style="margin-top:8px"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="reDo()">Reassign</button>`;
  if(s.k==='cl')h=`<h1>Close out ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}?</h1><p class="mut">${esc(g(ses,'worker'))}'s timer stops now.</p><textarea id="sn" rows="3" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mClose',{id:'${esc(s.id)}',note:$('#sn').value},'Session closed')">Confirm close</button>`;
  if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><label class="mut" for="sd" style="display:block;margin-top:8px">What is it about? (shown to the worker)</label><textarea id="sd" rows="3">Harvest the ready cohort, weigh each tote, then complete the session.</textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',desc:$('#sd').value,items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
@@ -229,62 +304,137 @@ function sheet(){const s=SH,ses=[...(X.open||[]),...Q()].find(x=>g(x,'id')===s.i
  if(s.k==='vb'){const it=(VV().release||[]).find(x=>x.bed===s.bed)||{steps:[],verified:0,total:0},L=miss(it.steps);h=`<h1>Verify turnover and release · ${esc(s.bed)}</h1><p class="mut">${it.verified} of ${it.total} steps verified · final inspection passed. Finished steps are verified under your name.</p>`
   +(L.length?`<div class="rb">Missing: ${esc(L.slice(0,6).map(a=>a.name).join(', '))}${L.length>6?' +'+(L.length-6)+' more':''}. These are recorded as overridden.</div><textarea id="sn" rows="2" placeholder="Override reason (10+ characters, logged permanently)" style="margin-top:8px"></textarea>`:'<p>Every required step is complete.</p>')
   +`<button class="btn p" style="width:100%;margin-top:10px" onclick="relDo()">${L.length?'Release with override':'Release bed'}</button>`}
- return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog">${h}<button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Cancel</button></div></div>`}
+ return h}
+/* ---------- navigation between screens and sheets ---------- */
+function toAssign(bed,actId){SH=null;AF=AF0();AF.bed=bed||'';if(actId)AF.acts=[actId];V='assign';render();scrollTo(0,0)}
+function go(k,a,b){if(k==='tab'){SH=null;V=a;render();scrollTo(0,0);return}if(k==='asg')return toAssign(a,b);
+ const m={bed:{k:'bed',bed:a},prop:{k:'prop',id:a},find:{k:'find',id:a},vp:{k:'vp',cohort:a},vh:{k:'vh',cohort:a},vf:{k:'vf',bed:a},vb:{k:'vb',bed:a},tu:{k:'tu',bed:a},as:{k:'as',bed:a},ex:{k:'ex',id:a},ho:{k:'ho',bed:a,un:b?1:0},st:{k:'st',bed:a},re:{k:'re',id:a,q:b?1:0},cl:{k:'cl',id:a}};
+ if(m[k]){SH=m[k];draw()}}
+function propOk(id){const p=(D.proposals||[]).find(x=>g(x,'id')===id),bed=$('#pb').value;if(!p)return serr('That proposal is no longer open.');if(!bed)return serr('Choose a bed.');
+ if(BLOCK.includes(g(p,'check')))return serr('Blocked by the planner check: '+g(p,'check')+'. Fix it in the planner first.');
+ run(async()=>{if(bed!==g(p,'bed'))await api('changeBed',{id,bed});await api('approve',{ids:[id]})},'Approved '+bed+' for '+cropNm(g(p,'crop')),true)}
+function propRej(id){const r=$('#pw').value.trim();if(r.length<5)return serr('Write a reason for rejecting (5+ characters).');run(()=>api('reject',{id,reason:r}),'Proposal rejected')}
+function holdDo(bed){const r=$('#sn').value.trim();if(r.length<5)return serr('Give a reason (5+ characters) to place a bed on hold.');act('holdBed',{bed,reason:r},'Bed placed on hold')}
+
+/* ---------- sheets for the bed, proposal, finding, turnover, hold and exception screens ---------- */
+const kvh=rows=>`<div class="kv">${rows.filter(Boolean).map(r=>`<div><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join('')}</div>`;
+const SN={
+ find:s=>{const f=(X.scout||[]).find(x=>g(x,'id')===s.id);if(!f)return`<h1>Finding</h1><p class="mut">That finding is no longer listed. Refresh the board.</p>`;
+  return`<h1>Finding on ${esc(g(f,'bed'))}</h1><p><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span> <span class="mut">${esc(g(f,'domain'))}</span></p>${g(f,'notes')?`<p>${esc(g(f,'notes'))}</p>`:''}<div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div><div class="btns">${B('Open bed','bed',g(f,'bed'))}${B('Assign follow-up','asg',g(f,'bed'),'p')}</div>`},
+ prop:s=>{const p=(D.proposals||[]).find(x=>g(x,'id')===s.id);if(!p)return`<h1>Approve a bed</h1><p class="mut">That proposal is no longer open. Refresh the board.</p>`;
+  const sug=g(p,'bed'),chk=g(p,'check'),blk=BLOCK.includes(chk),av=Object.keys(D.beds||{}).filter(id=>g(BS(id),'status')==='AVAILABLE').sort();if(sug&&!av.includes(sug))av.unshift(sug);
+  return`<h1>Approve a bed · ${esc(cropNm(g(p,'crop')))}</h1><p class="mut">Planned ${esc(fday(g(p,'plant'))||'no date')}${sug?' · suggested '+esc(sug):' · no bed suggested'}${g(p,'cases')?' · '+esc(g(p,'cases'))+' cases target':''}</p>`
+  +(blk?`<div class="rb">Planner check: ${esc(chk)}. Approval is blocked until the planner fixes this.</div>`:chk&&chk!=='OK'?`<div class="rb">Planner check: ${esc(chk)}</div>`:'')
+  +`<label class="mut f" for="pb">Bed to use</label><select id="pb"><option value="">Choose a bed…</option>${av.map(b=>{const st=g(BS(b),'status');return`<option value="${esc(b)}"${b===sug?' selected':''}>${esc(b)} · ${esc(BST[st]||st||'unknown')}${b===sug?' · suggested':''}</option>`}).join('')}</select>
+  <label class="mut f" for="pw">Reason, only if rejecting</label><textarea id="pw" rows="2"></textarea>
+  <div class="btns"><button class="btn w" data-a="${esc(s.id)}" onclick="propRej(this.dataset.a)">Reject</button><button class="btn p" data-a="${esc(s.id)}" onclick="propOk(this.dataset.a)"${blk?' disabled':''}>Approve bed</button></div>`},
+ bed:s=>{const b=s.bed,bs=BS(b),st=g(bs,'status'),cs=cohOn(b),tr=turnOf(b),ri=relItem(b),op=(X.open||[]).filter(x=>g(x,'bed')===b),qq=Q().filter(x=>g(x,'bed')===b),ex=exOpen(b),fd=(X.scout||[]).filter(f=>g(f,'bed')===b).slice(0,3);
+  let h=`<h1>${esc(b)}</h1><p style="margin:0 0 6px"><span class="tag ${st==='HOLD'?'PAUSED':st==='AVAILABLE'?'':'LOW'}">${esc(BST[st]||st||'Unknown')}</span> <span class="mut">${[g(bs,'len')?g(bs,'len')+' ft':'',g(bs,'reserved')?'reserved for '+g(bs,'reserved'):''].filter(Boolean).map(esc).join(' · ')}</span></p>`+(st==='HOLD'?`<div class="rb">On hold${g(bs,'hold')?': '+esc(g(bs,'hold')):''}</div>`:'');
+  h+='<h2>Crops</h2>'+(cs.length?cs.map(c=>{const id=g(c,'id'),cst=g(c,'status'),f=finishItem(b),wt=winText(c),btn=[];
+    if(cst==='PRE_PLANTING'&&plantItem(id))btn.push(B('Verify bed ready','vp',id,'p'));
+    if(cst==='ACTIVE'&&win(c).open)btn.push(B('Verify ready to harvest','vh',id,'p'));
+    if(cst==='HARVEST_READY'||cst==='HARVESTING'){btn.push(B('Assign harvest','as',b,'p'));if(f)btn.push(B('Mark harvest finished','vf',b,'w'))}
+    return`<div class="card ${cst==='HARVEST_READY'?'Must':'flat'}"><div class="r"><div class="g"><b>${esc(g(c,'cropName','crop'))}</b> <span class="mut">${esc(id)}</span></div><span class="tag LOW">${esc(STG[cst]||cst)}</span></div>${wt?`<div class="mut">${esc(wt)}</div>`:''}<div class="mut">${cst==='PRE_PLANTING'?'Planned ':'Planted '}${esc(fday(g(c,'dob'))||g(c,'dob'))}</div>${cst==='PRE_PLANTING'&&!plantItem(id)?'<div class="mut">Workers record planting in the field app.</div>':''}${btn.length?`<div class="btns">${btn.join('')}</div>`:''}</div>`}).join(''):none('No crop on this bed.'));
+  if(tr){const done=Math.max(0,(+tr.total||0)-(+tr.remaining||0)),pct=tr.total?Math.round(done/tr.total*100):0;
+   h+=`<h2>Turnover</h2><div class="card ${tr.sla==='RED'?'HIGH':tr.sla==='YELLOW'?'MEDIUM':''}"><div class="mut">${esc(tr.phase)} · ${esc(tr.progress)} steps · day ${esc(tr.days)} · SLA ${esc(tr.sla)}</div><div class="meter"><i style="width:${pct}%"></i></div><div class="btns">${B('Checklist','tu',b)}${ri?B('Release bed','vb',b,'p'):''}</div></div>`}
+  if(op.length||qq.length)h+='<h2>Open tasks</h2>'+[...op.map(x=>[x,0]),...qq.map(x=>[x,1])].map(([x,q])=>`<div class="card flat"><b>${esc(g(x,'act'))}</b><div class="mut">${esc(g(x,'worker'))} · ${q?'not started':g(x,'status')==='PAUSED'?'paused':'in progress'}</div><div class="btns">${B('Reassign','re',g(x,'id'),'',q?'1':'')}${q?'':B('Close out','cl',g(x,'id'),'w')}</div></div>`).join('');
+  if(ex.length)h+='<h2>Open exceptions</h2>'+ex.map(e=>`<div class="card ${g(e,'sev')==='HIGH'?'HIGH':'MEDIUM'}"><div class="r"><div class="g">${esc(g(e,'text'))}</div><span class="tag ${esc(g(e,'sev'))}">${esc(g(e,'sev'))}</span></div><div class="btns">${B('Resolve','ex',g(e,'id'))}</div></div>`).join('');
+  if(fd.length)h+='<h2>Recent scouting</h2>'+fd.map(f=>`<div class="card ${esc(g(f,'sev'))}" role="button" tabindex="0" data-a="${esc(g(f,'id'))}" onclick="go('find',this.dataset.a)" ${KEY}><div class="r"><div class="g"><b>${esc(g(f,'domain'))}</b><div class="mut">${esc(g(f,'notes'))}</div></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div></div>`).join('');
+  return h+`<div class="btns">${B('Assign task','asg',b,'p')}${st==='HOLD'?B('Release hold','ho',b,'',1):B('Place on hold','ho',b,'w')}${(st==='AVAILABLE'||st==='RESERVED')&&!tr?B('Start turnover','st',b):''}</div>`},
+ tu:s=>{const b=s.bed,tr=turnOf(b),ri=relItem(b);if(!tr)return`<h1>Turnover · ${esc(b)}</h1><p class="mut">This bed is not in turnover.</p>`;const S=turnSteps(b),ok=S.filter(x=>x.ok).length;
+  return`<h1>Turnover · ${esc(b)}</h1><p class="mut">${esc(tr.phase)} · ${ok} of ${S.length||tr.total} steps done · day ${esc(tr.days)} · SLA ${esc(tr.sla)}</p>${stepsHtml(b,1)}<p class="mut" style="margin-top:10px">${ri?'The final inspection has passed. You can release the bed.':'The bed can be released once every required step, including the final inspection, is done.'}</p>${ri?`<div class="btns">${B('Verify turnover and release bed','vb',b,'p')}</div>`:''}`},
+ ho:s=>s.un?`<h1>Release hold · ${esc(s.bed)}</h1><p class="mut">${esc(g(BS(s.bed),'hold')||'No reason recorded')}</p><textarea id="sn" rows="2" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" data-a="${esc(s.bed)}" onclick="act('unholdBed',{bed:this.dataset.a,note:$('#sn').value},'Hold released')">Release hold</button>`
+  :`<h1>Place ${esc(s.bed)} on hold</h1><p class="mut">A bed on hold is blocked from new work until you release it.</p><textarea id="sn" rows="2" placeholder="Reason (5+ characters)"></textarea><button class="btn w" style="width:100%;margin-top:10px" data-a="${esc(s.bed)}" onclick="holdDo(this.dataset.a)">Place on hold</button>`,
+ st:s=>`<h1>Start turnover · ${esc(s.bed)}</h1><p class="mut">Starts the turnover clock for this bed so its reset steps are tracked against the SLA. The server refuses if the bed has a live crop, is on hold or is already in turnover.</p><textarea id="sn" rows="2" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" data-a="${esc(s.bed)}" onclick="act('startTurnover',{bed:this.dataset.a,note:$('#sn').value},'Turnover started')">Start turnover</button>`,
+ ex:s=>{const e=(D.exceptions||[]).find(x=>g(x,'id')===s.id);if(!e)return`<h1>Exception</h1><p class="mut">That exception is no longer listed. Refresh the board.</p>`;
+  return`<h1>Resolve exception · ${esc(g(e,'bed'))}</h1><p><span class="tag ${esc(g(e,'sev'))}">${esc(g(e,'sev'))}</span></p><p>${esc(g(e,'text'))}</p><textarea id="sn" rows="2" placeholder="Resolution note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" data-a="${esc(s.id)}" onclick="act('resolveException',{id:this.dataset.a,note:$('#sn').value},'Exception resolved')">Mark resolved</button>`}
+};
+/* every sheet gets a labelled dialog frame, an inline error line and a Close button */
+function sheet(){const s=SH,h=SN[s.k]?SN[s.k](s):sheet0();
+ return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog" aria-modal="true" aria-labelledby="sht">${h.replace('<h1>','<h1 id="sht" tabindex="-1">')}<p class="err" id="serr" role="alert" hidden></p><button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Close</button></div></div>`}
+
+
 function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'mReassignTask':'mReassign',d,'Reassigned')}
 function plantDo(){const c=SH.cohort,it=(VV().plant||[]).find(x=>x.cohort===c),n=it?it.miss:0,r=$('#sn')?$('#sn').value.trim():'';if(n&&r.length<10)return toast('Steps are not done: write a reason (10+ characters).');act('verifyPlantReady',{cohort:c,override:n?r:''},n?'Verified with override (logged)':'Bed verified ready for planting')}
 function relDo(){const b=SH.bed,it=(VV().release||[]).find(x=>x.bed===b),n=it?it.miss:0,r=$('#sn')?$('#sn').value.trim():'';if(n&&r.length<10)return toast('Steps are missing: write a reason (10+ characters).');act('verifyBed',{bed:b,override:n?r:''},n?'Bed released under override (logged)':'Bed released')}
-const draw=()=>{$('#ov').innerHTML=SH?sheet():''};
+let drawSig='',drawBack=null;
+const draw=soft=>{const o=$('#ov'),sig=SH?JSON.stringify(SH):'';if(soft&&sig===drawSig)return;
+ if(SH&&!drawSig)drawBack=document.activeElement;
+ o.innerHTML=SH?sheet():'';drawSig=sig;$('#app').inert=!!SH;
+ if(SH){const f=$('#sht');if(f)f.focus()}else if(drawBack){if(drawBack.isConnected)drawBack.focus();drawBack=null}};
 
 /* ---------- shell ---------- */
+const IC=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`,
+ ICON={board:IC('<path d="M4 6h16M4 12h16M4 18h10"/>'),today:IC('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>'),verify:IC('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'),harvest:IC('<path d="M5 11h14l-1.5 8h-11z"/><path d="M9 11l3-6 3 6"/>'),turnover:IC('<path d="M20 12a8 8 0 10-3 6.2"/><path d="M20 5v5h-5"/>'),scout:IC('<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>'),log:IC('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),assign:IC('<path d="M12 5v14M5 12h14"/>')};
 const NAV=[['board','Board'],['today','Today'],['verify','Verify'],['harvest','Harvest'],['turnover','Turnover'],['scout','Scouting'],['log','Log'],['assign','Assign task']];
-function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw()}
- const v={board:vBoard,today:vToday,verify:vVerify,harvest:vHarvest,turnover:vTurn,scout:vScout,log:vLog,assign:vAssign}[V](),n=todayItems().length,
+function badges(){const o=X.open||[],ht=(D.cohorts||[]).filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))).length+(VV().harvest||[]).length;
+ return{board:[o.filter(s=>g(s,'status')==='PAUSED').length,''],today:[tq().filter(i=>i.p===1).length,''],verify:[vN(),''],harvest:[ht,' soft'],turnover:[Object.keys(D.beds||{}).filter(id=>turnOf(id)).length,' soft']}}
+function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw(1)}
+ const v={board:vBoard,today:vToday,verify:vVerify,harvest:vHarvest,turnover:vTurn,scout:vScout,log:vLog,assign:vAssign}[V](),bg=badges(),
  t=last?new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).toLowerCase():'-',live=on&&!ERR;
  a.innerHTML=`<header><b>HT Manager</b><button class="btn" onclick="out()">Sign out</button></header>
+ ${on?'':'<div class="bn" role="alert">No connection. You are seeing data from '+esc(t)+'. Changes cannot be saved until you are back online.</div>'}
  <div class="sub"><button class="live ${live?'':'off'}" onclick="load()" title="Tap to refresh"><i></i>${live?'Live':on?'Not updating':'Offline'}, updated ${t}</button><span>${esc(ME.name)}, ${esc(ME.role)}</span></div>
- <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main>
- <nav>${NAV.map(x=>`<button class="${V===x[0]?'on':''}" onclick="V='${x[0]}';render();scrollTo(0,0)">${x[1]}${x[0]==='today'&&n?`<span class="bd">${n}</span>`:''}${x[0]==='verify'&&vN()?`<span class="bd">${vN()}</span>`:''}</button>`).join('')}</nav>`;draw()}
+ <main id="main">${ERR?`<div class="err" role="alert">${esc(ERR)}</div>`:''}${v}</main>
+ <nav aria-label="Main">${NAV.map(x=>{const b=bg[x[0]];return`<button ${V===x[0]?'aria-current="page" ':''}class="${V===x[0]?'on':''}" onclick="V='${x[0]}';render();scrollTo(0,0)">${ICON[x[0]]}${x[1]}${b&&b[0]?`<span class="bd${b[1]}">${b[0]}</span>`:''}</button>`}).join('')}</nav>`;draw(1)}
 
 /* ---------- camera QR (BarcodeDetector) ---------- */
 let cs=null,ct=0;
 async function scanQR(){let det;try{det=new BarcodeDetector({formats:['qr_code']});cs=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})}catch(e){return toast('Camera unavailable. Type the bed ID instead.')}
- SH=null;const o=document.createElement('div');o.id='camov';o.className='ov';o.innerHTML='<div class="sh"><h1>Point at a bed QR code</h1><video id="cv" playsinline muted></video><button class="btn" style="width:100%;margin-top:8px" onclick="camStop()">Cancel</button></div>';document.body.appendChild(o);
+ SH=null;const o=document.createElement('div');o.id='camov';o.className='ov';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','Scan a bed QR code');o.innerHTML='<div class="sh"><h1>Point at a bed QR code</h1><video id="cv" playsinline muted></video><button class="btn" style="width:100%;margin-top:8px" onclick="camStop()">Cancel</button></div>';document.body.appendChild(o);
  const v=$('#cv');v.srcObject=cs;try{await v.play()}catch(e){}
  ct=setInterval(async()=>{try{const r=await det.detect(v);if(r.length){const b=parseBed(r[0].rawValue);camStop();HQ=b||r[0].rawValue;render()}}catch(e){}},400)}
 function camStop(){clearInterval(ct);if(cs){cs.getTracks().forEach(t=>t.stop());cs=null}const o=$('#camov');if(o)o.remove()}
 
 /* ---------- demo backend (WEB_APP_URL = '') ---------- */
-function mock(a,d){const n=now(),H=36e5;
- if(!mock.s)mock.s={D:{beds:{'HT-B2-03':{status:'HARVEST_READY'},'HT-B1-02':{status:'POST_HARVEST',turn:{left:[{id:'A5',name:'Pull Plastic & Drip'}],phase:'CLEARING',progress:'18 / 19',remaining:1,total:19,days:3,sla:'YELLOW',inspected:true}},'HT-B3-01':{status:'TURNOVER',turn:{left:[{id:'A2',name:'Residue clearing'},{id:'A3',name:'Bed sanitation'}],phase:'SANITATION',progress:'6 / 19',remaining:13,total:19,days:7,sla:'RED',inspected:false}}},workers:['lisa','Amani','Baraka','Chebet','Dawa'],
-  catalog:[{id:'ACT-001',name:'Harvest',group:'Harvest',type:'ACTIVITY'},{id:'ACT-002',name:'Weeding',group:'Crop care',type:'ACTIVITY'},{id:'ACT-003',name:'Irrigation check',group:'Irrigation',type:'ACTIVITY'}],
-  tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',tstatus:'ASSIGNED',date:today()},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'DONE',tstatus:'DONE',min:42,date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',tstatus:'RUNNING',date:today()}],
-  cohorts:[{id:'C-21',bed:'HT-B2-03',status:'HARVEST_READY',crop:'KAL',cropName:'Kale',dob:'2026-07-28',cases:40,vest:'PASS'},{id:'C-22',bed:'HT-B5-06',status:'HARVESTING',crop:'CHD',cropName:'Swiss Chard',dob:'2026-08-02',cases:30,vest:'PASS'}],
-  exceptions:[{id:'X1',bed:'HT-B1-02',sev:'MEDIUM',text:'Aphids on lower leaves',open:true}]},
-  X:{open:[{id:'S1',worker:'Chebet',bed:'HT-B4-01',act:'Irrigation check',status:'RUNNING',start:n-18*6e4,pausedMs:0,cohort:'C-18'},{id:'S2',worker:'Baraka',bed:'HT-B5-06',act:'Harvest',status:'PAUSED',reason:'Lunch',start:n-95*6e4,pausedMs:0,pauseAt:n-20*6e4,cohort:'C-22'}],
-  done:[{id:'S0',worker:'Dawa',bed:'HT-B3-02',act:'Weeding',status:'DONE',start:n-5*H,end:n-4*H,pausedMs:0}],
+function mock(a,d){const n=now(),H=36e5,dy=k=>{const x=new Date(Date.now()+k*864e5);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+ if(!mock.s)mock.s={D:{beds:{'HT-B2-03':{status:'HARVEST_READY',len:100},'HT-B5-06':{status:'HARVESTING',len:100},'HT-B4-01':{status:'OCCUPIED',len:100},'HT-B3-04':{status:'OCCUPIED',len:100},'HT-B2-04':{status:'RESERVED',reserved:'cohort',len:100},'HT-B6-01':{status:'AVAILABLE',len:100},'HT-B6-02':{status:'AVAILABLE',len:100},'HT-B6-03':{status:'HOLD',hold:'Drip line repair',len:100},
+   'HT-B1-02':{status:'POST_HARVEST',turn:{left:[{id:'A5',name:'Pull Plastic & Drip'}],phase:'CLEARING',progress:'18 / 19',remaining:1,total:19,days:3,sla:'YELLOW',inspected:true}},'HT-B3-01':{status:'TURNOVER',turn:{left:[{id:'A2',name:'Residue clearing'},{id:'A3',name:'Bed sanitation'},{id:'A4',name:'Soil amendment'},{id:'A5',name:'Pull Plastic & Drip'}],phase:'SANITATION',progress:'6 / 19',remaining:13,total:19,days:7,sla:'RED',inspected:false}}},workers:['lisa','Amani','Baraka','Chebet','Dawa'],
+  catalog:[{id:'ACT-001',name:'Harvest',group:'Harvest',type:'ACTIVITY'},{id:'ACT-002',name:'Weeding',group:'Crop care',type:'ACTIVITY'},{id:'ACT-003',name:'Irrigation check',group:'Irrigation',type:'ACTIVITY'},
+   {id:'A1',name:'Debris removal',group:'Turnover',type:'ACTIVITY',req:true},{id:'A2',name:'Residue clearing',group:'Turnover',type:'ACTIVITY',req:true},{id:'A3',name:'Bed sanitation',group:'Turnover',type:'ACTIVITY',req:true},{id:'A4',name:'Soil amendment',group:'Turnover',type:'ACTIVITY',req:true},{id:'A5',name:'Pull Plastic & Drip',group:'Turnover',type:'ACTIVITY',req:true}],
+  crops:[{id:'KAL',name:'Kale'},{id:'CHD',name:'Swiss Chard'}],
+  proposals:[{id:'ROW-12',cohort:'',crop:'CHD',bed:'HT-B6-01',cases:30,status:'PENDING',check:'OK',plant:dy(5)}],
+  tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',tstatus:'ASSIGNED',date:dy(-1)},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'DONE',tstatus:'DONE',min:42,date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',tstatus:'RUNNING',date:today()}],
+  cohorts:[{id:'C-21',bed:'HT-B2-03',status:'HARVEST_READY',crop:'KAL',cropName:'Kale',dob:'2026-07-28',cases:40,vest:'PASS',min:'2026-09-20',max:'2026-10-20'},{id:'C-22',bed:'HT-B5-06',status:'HARVESTING',crop:'CHD',cropName:'Swiss Chard',dob:'2026-08-02',cases:30,vest:'PASS',min:'2026-09-25',max:'2026-10-25'},
+   {id:'C-23',bed:'HT-B4-01',status:'ACTIVE',crop:'KAL',cropName:'Kale',dob:'2026-09-01',cases:35,vest:'PASS',min:dy(2),max:dy(16)},{id:'C-41',bed:'HT-B3-04',status:'ACTIVE',crop:'CHD',cropName:'Swiss Chard',dob:'2026-08-20',cases:30,vest:'PASS',min:dy(-3),max:dy(11)},{id:'C-30',bed:'HT-B2-04',status:'PRE_PLANTING',crop:'KAL',cropName:'Kale',dob:dy(1),cases:40,vest:'PENDING',min:'',max:''}],
+  exceptions:[{id:'X1',bed:'HT-B1-02',sev:'MEDIUM',text:'Aphids on lower leaves',open:true},{id:'X2',bed:'HT-B4-01',sev:'HIGH',text:'Leak at the header, row 3',open:true}]},
+  X:{open:[{id:'S1',worker:'Chebet',bed:'HT-B4-01',act:'Irrigation check',status:'RUNNING',start:n-18*6e4,pausedMs:0,cohort:'C-23'},{id:'S2',worker:'Baraka',bed:'HT-B5-06',act:'Harvest',status:'PAUSED',reason:'Lunch',start:n-95*6e4,pausedMs:0,pauseAt:n-20*6e4,cohort:'C-22'}],
+  done:[{id:'S0',worker:'Dawa',bed:'HT-B3-02',act:'Weeding',status:'DONE',start:n-5*H,end:n-4*H,pausedMs:0},{id:'S00',worker:'Lisa',bed:'HT-B1-02',act:'Mulch / Tarp Installation',status:'DONE',start:n-30*H,end:n-29*H,pausedMs:0}],
   scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[],queue:[{id:'T9',worker:'lisa',bed:'HT-B1-02',act:'Pull Plastic & Drip',desc:'Remove subsurface drip tape, black plastic mulch, stakes, and trellising from the harvested bed.',assignedBy:'Chris Kenny',status:'ASSIGNED',date:today()}]}};
  const m=mock.s;
  if(!m.X.verify){const H2=36e5,st=(id,name,w,bed,h,min,by)=>({id:'S'+id,worker:w,bed,act:id,name,end:n-h*H2,min,count:'',unit:'',qty:0,st:by?'VERIFIED':'PENDING',by:by||'',at:by?n-(h-1)*H2:0});
   m.X.verify={pending:[st('HT-ACT-0007','Drip Line Flush','Dawa','HT-B1-02',3,25),st('HT-ACT-0008','Pressure Check','Dawa','HT-B1-02',2,10)],
-   plant:[{cohort:'C-30',bed:'HT-B2-03',crop:'Kale',dob:today(),total:3,verified:1,miss:1,steps:[{id:'HT-ACT-0020',name:'Tray Filling & Seeding',st:'VERIFIED',by:'Chris Kenny',at:n-5*H2},{id:'HT-ACT-0021',name:'Germination Check',st:'DONE',worker:'Lisa',end:n-4*H2},{id:'HT-ACT-0022',name:'Seedling Watering',st:'MISSING'}]}],
-   harvest:[{cohort:'C-41',bed:'HT-B3-01',crop:'Swiss Chard',dob:'2026-08-20',min:'2026-10-10',max:'2026-10-24',days:3,late:false}],
+   plant:[{cohort:'C-30',bed:'HT-B2-04',crop:'Kale',dob:dy(1),total:3,verified:1,miss:1,steps:[{id:'HT-ACT-0020',name:'Tray Filling & Seeding',st:'VERIFIED',by:'Chris Kenny',at:n-5*H2},{id:'HT-ACT-0021',name:'Germination Check',st:'DONE',worker:'Lisa',end:n-4*H2},{id:'HT-ACT-0022',name:'Seedling Watering',st:'MISSING'}]}],
+   harvest:[{cohort:'C-41',bed:'HT-B3-04',crop:'Swiss Chard',dob:'2026-08-20',min:dy(-3),max:dy(11),days:3,late:false}],
    finish:[{cohort:'C-22',bed:'HT-B5-06',crop:'Swiss Chard',sessions:2,lbs:144,workers:['Baraka'],last:n-2*H2}],
-   release:[{bed:'HT-B1-02',progress:'19 / 19',days:3,sla:'YELLOW',phase:'COMPLETE',total:2,verified:1,miss:0,steps:[{id:'HT-ACT-0018',name:'Pre-Irrigation',st:'VERIFIED',by:'Chris Kenny',at:n-3*H2},{id:'HT-ACT-0019',name:'Final Bed Inspection',st:'DONE',worker:'Lisa',end:n-2*H2}]}],
+   release:[{bed:'HT-B1-02',progress:'19 / 19',days:3,sla:'YELLOW',phase:'COMPLETE',total:2,verified:1,miss:0,steps:[{id:'A1',name:'Debris removal',st:'VERIFIED',by:'Chris Kenny',at:n-3*H2},{id:'A2',name:'Residue clearing',st:'DONE',worker:'Lisa',end:n-2*H2},{id:'A3',name:'Bed sanitation',st:'DONE',worker:'Lisa',end:n-2*H2},{id:'A4',name:'Soil amendment',st:'DONE',worker:'Lisa',end:n-2*H2},{id:'A5',name:'Pull Plastic & Drip',st:'MISSING'}]}],
    log:[{bed:'HT-B1-02',v:1,o:1,p:0,last:n-H2,work:[st('HT-ACT-0016','Drip Tape Installation','Lisa','HT-B1-02',5,70,'Chris Kenny')],over:[{by:'Chris Kenny',at:n-H2,note:'Done by contractor',steps:[{id:'HT-ACT-0017',name:'Mulch / Tarp Installation'}]}]}]}}
  const vd=k=>{m.X.verify[k]=m.X.verify[k].filter(x=>!(x.cohort&&x.cohort===d.cohort)&&!(x.bed&&x.bed===d.bed&&k!=='pending'))};
  if(a==='verifyWork'){m.X.verify.pending=m.X.verify.pending.filter(x=>!(d.ids||[]).includes(x.id))}
- if(a==='verifyPlantReady')vd('plant');if(a==='verifyHarvestReady')vd('harvest');if(a==='markHarvestFinished')vd('finish');if(a==='verifyBed')vd('release');
+ if(a==='verifyPlantReady')vd('plant');if(a==='verifyHarvestReady'){vd('harvest');const c=m.D.cohorts.find(x=>x.id===d.cohort);if(c)c.status='HARVEST_READY'}if(a==='markHarvestFinished')vd('finish');if(a==='verifyBed')vd('release');
  if(a==='login'){if(d.pin!=='1234')throw new Error('Wrong ID or PIN');return{ok:true,session:'demo',user:{name:'Chris Kenny',role:'Manager'},data:m.D}}
  if(a==='mReassign'||a==='mReassignTask'){const s=[...m.X.open,...m.X.queue].find(x=>x.id===d.id);if(s){const from=s.worker;s.worker=d.worker;s.re={from,to:d.worker,by:'Chris Kenny',note:d.note};m.X.moves.unshift({at:'now',by:'Chris Kenny',detail:d.id+': '+from+' -> '+d.worker+(d.note?' ('+d.note+')':'')})}}
  if(a==='mClose'){const i=m.X.open.findIndex(x=>x.id===d.id);if(i>=0){const s=m.X.open.splice(i,1)[0];s.status='DONE';s.end=n;m.X.done.unshift(s)}}
  if(a==='dispatch')d.items.forEach(i=>m.X.queue.push({id:'T'+n+Math.random().toString(36).slice(2,5),bed:d.bed,act:i.act,worker:i.worker,status:'ASSIGNED',date:d.date,desc:d.desc,assignedBy:'Chris Kenny'}));
  if(a==='verifyTask'){m.D.tasks.forEach(t=>{if(t.id===d.id){t.vBy='Chris Kenny';t.vAt='now'}})}
  if(a==='verifyBed'){delete m.D.beds[d.bed].turn;m.D.beds[d.bed].status='AVAILABLE'}
+ if(a==='approve')d.ids.forEach(id=>{const p=m.D.proposals.find(x=>x.id===id);if(p){m.D.proposals=m.D.proposals.filter(x=>x!==p);m.D.cohorts.push({id:'C-'+(60+m.D.cohorts.length),bed:p.bed,status:'PRE_PLANTING',crop:p.crop,cropName:(m.D.crops.find(c=>c.id===p.crop)||{}).name||p.crop,dob:p.plant,cases:p.cases,vest:'PENDING'});m.D.beds[p.bed]={status:'RESERVED',reserved:'cohort',len:100}}});
+ if(a==='reject')m.D.proposals=m.D.proposals.filter(x=>x.id!==d.id);
+ if(a==='changeBed'){const p=m.D.proposals.find(x=>x.id===d.id);if(p)p.bed=d.bed}
+ if(a==='holdBed'){m.D.beds[d.bed]=Object.assign(m.D.beds[d.bed]||{},{status:'HOLD',hold:d.reason})}
+ if(a==='unholdBed'){const b=m.D.beds[d.bed];if(b){b.status='AVAILABLE';delete b.hold}}
+ if(a==='startTurnover'){const b=m.D.beds[d.bed]=m.D.beds[d.bed]||{};b.status='POST_HARVEST';b.turn={left:[{id:'A1',name:'Debris removal'},{id:'A2',name:'Residue clearing'},{id:'A3',name:'Bed sanitation'},{id:'A4',name:'Soil amendment'},{id:'A5',name:'Pull Plastic & Drip'}],phase:'CLEARING',progress:'0 / 5',remaining:5,total:5,days:0,sla:'GREEN',inspected:false}}
+ if(a==='resolveException'){const e=m.D.exceptions.find(x=>x.id===d.id);if(e)e.open=false}
  return{ok:true,data:m.D,x:m.X}}
 
 addEventListener('online',()=>{on=true;load()});addEventListener('offline',()=>{on=false;render()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 setInterval(()=>document.querySelectorAll('[data-t]').forEach(e=>{const s=[...(X.open||[]),...(X.done||[])].find(x=>g(x,'id')===e.dataset.t);if(s)e.textContent=fmt(el(s))}),1000);
 setInterval(()=>{const f=document.activeElement;if(SESS&&!document.hidden&&!SH&&!(f&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))load()},BOARD_REFRESH_MS);
+/* keyboard: Escape closes the open dialog or camera; Tab stays inside a dialog */
+document.addEventListener('keydown',e=>{const o=$('#ov');
+ if(e.key==='Escape'){if($('#camov'))return camStop();if(SH){SH=null;draw()}return}
+ if(e.key==='Tab'&&SH&&o.firstChild){const f=[...o.querySelectorAll('button,input,select,textarea,summary,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled&&x.offsetParent!==null);if(!f.length)return;const a=f[0],z=f[f.length-1];
+  if(e.shiftKey&&(document.activeElement===a||!o.contains(document.activeElement))){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
 render();
 </script></body></html>
