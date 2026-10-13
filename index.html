@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>HT-ManagerApp</title>
+<title>HT Manager</title>
 <style>
 :root{--bg:#eef1ee;--card:#fff;--ink:#0d1b14;--mut:#53645a;--line:#cdd6cf;--hd:#0d1b14;--hdi:#f2f6f2;--acc:#0b6b3a;--on:#fff;--must:#c62d1f;--att:#b86e00;--ok:#0b6b3a}
 @media(prefers-color-scheme:dark){:root{--bg:#0b130e;--card:#15221a;--ink:#eef4ee;--mut:#9fb2a5;--line:#2a3d30;--hd:#050b07;--acc:#52c985;--on:#06110a;--must:#ff7a6b;--att:#f0b04a;--ok:#52c985}}
 *{box-sizing:border-box}html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px)}
 header{background:var(--hd);color:var(--hdi);padding:10px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
-header b{font-size:17px;flex:1;min-width:0}header small{display:block;font-weight:400;opacity:.75;font-size:12px}
-.dot{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;border:1.5px solid currentColor;white-space:nowrap}.dot.off{color:#ff9a8e}
-main{max-width:720px;margin:0 auto;padding:12px 14px calc(24px + env(safe-area-inset-bottom,0px))}
-.tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:4}
-.tabs button{flex:none;background:none;border:2px solid transparent;border-radius:10px;font:inherit;font-weight:700;padding:8px 12px;min-height:44px;color:var(--ink);white-space:nowrap}.tabs button.on{background:var(--acc);color:var(--on)}
-.who{line-height:1.15;text-align:right}.who small{display:block}.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:17px}
-header{flex-wrap:wrap}nav{display:none;position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--hd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
-nav button{flex:1;background:none;border:0;color:var(--hdi);opacity:.7;font:inherit;font-size:13px;font-weight:700;padding:10px 2px;min-height:48px;border-radius:10px}
+header b{font-size:18px;flex:1;min-width:0}
+header .btn{background:none;border-color:rgba(255,255,255,.35);color:var(--hdi);min-height:38px;padding:4px 14px}
+.sub{max-width:720px;margin:0 auto;padding:10px 14px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--mut)}
+.live{display:inline-flex;align-items:center;gap:7px;background:none;border:0;padding:4px 0;font:inherit;font-size:14px;color:var(--ok);font-weight:700;cursor:pointer}
+.live i{width:9px;height:9px;border-radius:50%;background:currentColor;display:inline-block}.live.off{color:var(--must)}
+main{max-width:720px;margin:0 auto;padding:6px 14px calc(96px + env(safe-area-inset-bottom,0px))}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;gap:2px;overflow-x:auto;background:var(--hd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:6}
+nav button{flex:1 0 auto;background:none;border:0;color:var(--hdi);opacity:.72;font:inherit;font-size:13px;font-weight:700;padding:8px 12px;min-height:48px;border-radius:10px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 nav button.on{opacity:1;background:var(--acc);color:var(--on)}
-h1{font-size:22px;margin:4px 0 10px}h2{font-size:17px;margin:18px 0 8px}.mut{color:var(--mut);font-size:14px}
+nav .bd{background:var(--must);color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;line-height:1.5}
+h1{font-size:22px;margin:12px 0 6px}h2{font-size:17px;margin:18px 0 8px}.mut{color:var(--mut);font-size:14px}
 button,input,select,textarea{font:inherit;color:var(--ink)}
 .btn{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px 14px;min-height:48px;font-weight:700;cursor:pointer}
 .btn.p{background:var(--acc);border-color:var(--acc);color:var(--on)}.btn.w{border-color:var(--att);color:var(--att)}.btn:disabled{opacity:.5}
@@ -28,14 +29,18 @@ input,select,textarea{width:100%;padding:12px;border:2px solid var(--line);borde
 .r{display:flex;gap:8px;align-items:center}.r>.g{flex:1;min-width:0}.btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.btns .btn{flex:1}
 .t{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;background:var(--ok);color:var(--on)}.tag.PAUSED,.tag.MEDIUM{background:var(--att)}.tag.HIGH{background:var(--must)}.tag.LOW{background:var(--mut)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.chips .btn{min-height:42px;padding:6px 12px}.chips .on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.chips .btn{min-height:42px;padding:6px 12px}.chips .on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.chips .btn span{opacity:.75;margin-left:4px}
 .err{background:var(--must);color:#fff;padding:10px 12px;border-radius:12px;margin:8px 0}
-.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.sum div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 10px}.sum b{font-size:26px;display:block}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:17px}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:9}
 .sh{background:var(--bg);width:min(560px,100%);max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom,0px))}
 #login{max-width:380px;margin:12vh auto 0;padding:0 14px}#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:20;display:none}
 video{width:100%;border-radius:12px;background:#000}
 .rb{margin-top:6px;padding:6px 10px;border-radius:10px;background:rgba(184,110,0,.14);border-left:4px solid var(--att);font-size:14px}
+.list{max-height:280px;overflow:auto;border:2px solid var(--line);border-radius:12px;padding:4px;background:var(--card)}
+.list .btn{display:block;width:100%;text-align:left;margin:2px 0;min-height:42px;padding:8px 10px;border-color:transparent}.list .btn.on{background:var(--acc);color:var(--on)}
+label.f{display:block;margin:12px 0 4px}
 </style></head><body>
 <div id="app"></div><div id="ov"></div><div id="toast"></div>
 <script>
@@ -46,11 +51,13 @@ const GSR=()=>typeof google!=='undefined'&&!!(google.script&&google.script.run);
 /* tolerant getter: first present key, ignoring case, spaces and underscores */
 const nk=k=>String(k).toLowerCase().replace(/[\s_]/g,'');
 const g=(o,...ks)=>{if(!o)return'';for(const k of ks){if(o[k]!=null&&o[k]!=='')return o[k];const f=Object.keys(o).find(x=>nk(x)===nk(k));if(f&&o[f]!=null&&o[f]!=='')return o[f]}return''};
-let SESS='',ME=null,V='today',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='';   // session token lives in memory only
-let D={beds:{},cohorts:[],tasks:[],exceptions:[],workers:[]},X={open:[],done:[],scout:[],moves:[]};
+const AF0=()=>({bed:'',cat:'ALL',q:'',acts:[],ws:[],date:'',desc:''});
+let SESS='',ME=null,V='board',SH=null,ERR='',on=navigator.onLine,busy=0,last=0,FL={sev:'',dom:'',q:''},HQ='',LE='',BF='ALL',TF='ALL',AF=AF0();   // session token lives in memory only
+let D={beds:{},cohorts:[],tasks:[],exceptions:[],workers:[],catalog:[]},X={open:[],done:[],scout:[],moves:[]};
 const today=()=>new Date().toISOString().slice(0,10),now=()=>Date.now();
 const el=s=>(g(s,'end')||(g(s,'status')==='PAUSED'?g(s,'pauseAt'):now()))-g(s,'start')-(+g(s,'pausedMs')||0);
 const fmt=ms=>{let s=Math.max(0,Math.floor(ms/1e3));const h=Math.floor(s/3600),m=Math.floor(s%3600/60);s%=60;return(h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(s).padStart(2,'0')};
+const mn=x=>x<60?x+' min':Math.floor(x/60)+' h '+x%60+' min';
 const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2800)};
 
 /* ---------- API: Apps Script /exec (text/plain JSON) or built-in demo ---------- */
@@ -71,65 +78,148 @@ async function login(){const id=$('#u').value.trim(),pin=$('#p').value;if(!id||!
  LE='';busy=1;render();
  try{const r=await api('login',{userId:id,pin,ua:navigator.userAgent.slice(0,160)});
   if(!/^(manager|founder)$/i.test(g(r.user,'role'))){SESS=r.session;api('logout').catch(()=>{});SESS='';throw new Error('Access denied: Manager or Founder accounts only.')}
-  SESS=r.session;ME=r.user;D=r.data||D;busy=0;await load()}
+  SESS=r.session;ME=r.user;D=r.data||D;busy=0;V='board';await load()}
  catch(e){busy=0;SESS='';LE=e.message;render()}}
 function out(msg){if(SESS)api('logout').catch(()=>{});SESS='';ME=null;SH=null;LE=msg||'';render()}
 
 /* ---------- derived ---------- */
-const exOpen=b=>D.exceptions.filter(e=>g(e,'bed')===b&&g(e,'open'));
-const pri=t=>{const b=g(t,'bed'),ex=exOpen(b);return ex.some(e=>g(e,'sev')==='HIGH')||D.cohorts.some(c=>g(c,'bed')===b&&g(c,'status')==='HARVEST_READY')?'Must Do':ex.length?'Attention':'Routine'};
+const exOpen=b=>(D.exceptions||[]).filter(e=>g(e,'bed')===b&&g(e,'open'));
 const parseBed=q=>{const m=/(?:HT-?)?B\s*([1-6])[-_ ]\s*0?([1-6])(?!\d)/i.exec(String(q));return m?`HT-B${m[1]}-0${m[2]}`:''};
 const workers=()=>(D.workers&&D.workers.length?D.workers:[]);
+const bshort=b=>String(b||'').replace(/^HT-/,''),Q=()=>X.queue||(D.tasks||[]).filter(t=>g(t,'status')==='ASSIGNED'),
+ cropOf=id=>{const c=(D.cohorts||[]).find(x=>g(x,'id')===id);return c?g(c,'cropName','crop'):''};
+const bedList=()=>{const o=[];for(let b=1;b<=6;b++)for(let n=1;n<=6;n++)o.push(`HT-B${b}-0${n}`);return o};
+const BS=id=>(D.beds&&D.beds[id])||{},turnOf=id=>g(BS(id),'turn')||null;
+/* crew tasks: the backend returns one row per crew member; fold them back into one task */
+function cg(){const m={},o=[];(D.tasks||[]).forEach(t=>{const id=g(t,'id');if(!m[id]){m[id]={id,bed:g(t,'bed'),act:g(t,'act'),status:g(t,'tstatus')||g(t,'status'),vBy:g(t,'vBy'),vAt:g(t,'vAt'),vNote:g(t,'vNote'),crew:[]};o.push(m[id])}m[id].crew.push(t)});return o}
+/* Today = beds that need action today: harvest, turnover, holds, open exceptions. p: 1 Must Do, 2 Attention */
+function todayItems(){const L=[];Object.keys(D.beds||{}).forEach(id=>{const b=D.beds[id],st=g(b,'status'),ex=exOpen(id),t=turnOf(id),why=[];let p=3;
+  if(st==='HARVEST_READY'){why.push('Harvest ready');p=1}
+  if(st==='HARVESTING'){why.push('Harvesting');p=Math.min(p,2)}
+  if((st==='POST_HARVEST'||st==='TURNOVER')&&t){why.push((st==='TURNOVER'?'Turnover':'Post-harvest')+' · '+t.progress+' steps · day '+t.days+' · SLA '+t.sla);p=Math.min(p,t.sla==='RED'?1:2)}
+  if(st==='HOLD'){why.push('On hold'+(g(b,'hold')?': '+g(b,'hold'):''));p=Math.min(p,2)}
+  if(ex.length){why.push(ex.length+' open exception'+(ex.length>1?'s':'')+': '+g(ex[0],'text'));p=Math.min(p,ex.some(e=>g(e,'sev')==='HIGH')?1:2)}
+  if(why.length)L.push({id,st,p,why,c:(D.cohorts||[]).find(c=>g(c,'bed')===id)})});
+ return L.sort((a,b)=>a.p-b.p||a.id.localeCompare(b.id))}
 
-/* ---------- views ---------- */
+/* ---------- cards ---------- */
 function sCard(s,tools){const p=g(s,'status')==='PAUSED';
  return`<div class="card ${esc(g(s,'status'))}"><div class="r"><div class="g"><span class="tag ${esc(g(s,'status'))}">${p?'PAUSED · '+esc(g(s,'reason')||'no reason'):esc(g(s,'status')||'DONE')}</span>
  <div style="font-weight:800;font-size:18px;margin-top:4px">${esc(g(s,'bed'))} · ${esc(g(s,'act'))}</div><div class="mut">${esc(g(s,'worker'))}${g(s,'cohort')?' · '+esc(g(s,'cohort')):''}${g(s,'qty')?' · '+Math.round(g(s,'qty')*10)/10+' lb':''}</div></div>
  <div class="t" data-t="${esc(g(s,'id'))}">${fmt(el(s))}</div></div>${tools?`<div class="btns"><button class="btn" onclick="SH={k:'re',id:'${esc(g(s,'id'))}'};draw()">Reassign</button><button class="btn w" onclick="SH={k:'cl',id:'${esc(g(s,'id'))}'};draw()">Close out</button></div>`:''}</div>`}
-const bshort=b=>String(b||'').replace(/^HT-/,''),Q=()=>X.queue||D.tasks.filter(t=>g(t,'status')==='ASSIGNED'),
- cropOf=id=>{const c=D.cohorts.find(x=>g(x,'id')===id);return c?g(c,'cropName','crop'):''};
 const reP=r=>{try{return typeof r==='string'?(r?JSON.parse(r):null):r}catch(e){return null}};
 const reBox=r=>{r=reP(r);return r&&r.from?`<div class="rb">↪ Reassigned from <b>${esc(r.from)}</b> to <b>${esc(r.to)}</b>${r.note?' · “'+esc(r.note)+'”':''}</div>`:''};
-function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort'),tk=D.tasks.find(t=>g(t,'id')===g(o,'task'))||{},ds=g(o,'desc')||g(tk,'desc'),ab=g(o,'assignedBy')||g(tk,'by');
+function oCard(o,q){const p=g(o,'status')==='PAUSED',id=esc(g(o,'id')),co=g(o,'cohort'),tk=(D.tasks||[]).find(t=>g(t,'id')===g(o,'task'))||{},ds=g(o,'desc')||g(tk,'desc'),ab=g(o,'assignedBy')||g(tk,'by');
  return`<div class="card ${q?'flat':p?'PAUSED':''}"><b style="font-size:19px">${esc(g(o,'worker'))}</b>
  <div style="font-weight:800;font-size:18px">${esc(g(o,'act'))}</div>${ds?`<div class="mut">${esc(ds)}</div>`:''}${ab?`<div class="mut">Assigned by ${esc(ab)}</div>`:''}${reBox(g(o,'re'))}
  <div style="margin-top:6px"><span class="tag ${q?'LOW':p?'PAUSED':''}">${q?'Not started':p?'Paused':'In progress'}</span> <span class="mut">${q?'assigned, waiting':p?esc(g(o,'reason')||'paused'):'running'}</span></div>
  <div class="${q?'mut':'t'}" ${q?'':`data-t="${id}"`} style="margin-top:4px">${q?'Waiting for worker to start':fmt(el(o))}</div>
  <div class="kv"><div><span>Bed</span><b>${esc(bshort(g(o,'bed')))}</b></div><div><span>Cohort</span><b>${esc(co||'-')}</b></div><div><span>Crop</span><b>${esc(cropOf(co)||'-')}</b></div></div>
  <div class="btns"><button class="btn" onclick="SH={k:'re',id:'${id}',q:${q?1:0}};draw()">Reassign</button>${!q?`<button class="btn w" onclick="SH={k:'cl',id:'${id}'};draw()">Close out</button>`:''}</div></div>`}
-function vToday(){const o=X.open,q=Q(),n=o.length+q.length;
- return`<h1>Open field sessions</h1><p class="mut" style="margin:-6px 0 12px">${n} open, updated ${last?new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'-'}</p>`
- +(n?o.map(x=>oCard(x,0)).join('')+q.map(x=>oCard(x,1)).join(''):'<p class="mut">No open sessions right now.</p>')}
-function vReady(){return`<h1>Harvest ready</h1><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hList()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div><div id="hl" style="margin-top:10px">${hList()}</div>`}
-function vComplete(){const hs=[...X.open,...X.done].filter(s=>g(s,'act')==='Harvest');return`<h1>Harvest complete</h1>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||'<p class="mut">No harvests in the last 48 hours.</p>'}`}
-function hList(rd){const q=HQ.trim().toUpperCase();rd=rd||D.cohorts.filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&(!q||g(c,'bed').includes(q)||g(c,'bed')===parseBed(q)));
+
+/* ---------- Board: open field sessions ---------- */
+function vBoard(){const o=X.open||[],q=Q(),w=o.filter(x=>g(x,'status')!=='PAUSED'),p=o.filter(x=>g(x,'status')==='PAUSED'),
+ F={ALL:[...o.map(x=>[x,0]),...q.map(x=>[x,1])],WORKING:w.map(x=>[x,0]),PAUSED:p.map(x=>[x,0]),NOT:q.map(x=>[x,1])},
+ CH=[['ALL','All'],['WORKING','Working'],['PAUSED','Paused'],['NOT','Not started']],L=F[BF]||F.ALL;
+ return`<h1>Open field sessions</h1><p class="mut" style="margin:0 0 4px">Everything workers have been given and not yet finished.</p>
+ <div class="chips">${CH.map(c=>`<button class="btn ${BF===c[0]?'on':''}" onclick="BF='${c[0]}';render()">${c[1]}<span>${F[c[0]].length}</span></button>`).join('')}</div>`
+ +(L.length?L.map(x=>oCard(x[0],x[1])).join(''):'<p class="mut">No sessions match. Use Assign task to give someone work.</p>')}
+
+/* ---------- Today: beds that need action ---------- */
+function vToday(){const L=todayItems(),C=['','Must','Attention','flat'],P=['','Must do','Attention','Routine'];
+ return`<h1>Today</h1><p class="mut" style="margin:0 0 10px">Beds that need action today: harvest, turnover, holds and open exceptions.</p>`
+ +(L.length?L.map(i=>`<div class="card ${C[i.p]}"><div class="r"><div class="g"><b style="font-size:18px">${esc(i.id)}</b>${i.c?` <span class="mut">· ${esc(g(i.c,'cropName','crop'))} · ${esc(g(i.c,'id'))}</span>`:''}</div><span class="tag ${i.p===1?'HIGH':i.p===2?'MEDIUM':'LOW'}">${P[i.p]}</span></div>
+  ${i.why.map(w=>`<div class="mut">${esc(w)}</div>`).join('')}<div class="btns"><button class="btn" onclick="AF.bed='${esc(i.id)}';V='assign';render();scrollTo(0,0)">Assign task</button></div></div>`).join(''):'<p class="mut">Nothing needs action today.</p>')}
+
+/* ---------- Verify: task sign-off + bed ready ---------- */
+function vVerify(){const G=cg(),pend=G.filter(x=>x.status==='DONE'&&!x.vBy),dn=G.filter(x=>x.vBy).slice(-5).reverse(),
+ rel=Object.keys(D.beds||{}).filter(id=>{const t=turnOf(id);return t&&t.inspected}).sort();
+ return`<h1>Verify</h1><h2>Finished tasks awaiting sign-off</h2>`
+ +(pend.length?pend.map(x=>`<div class="card"><b style="font-size:18px">${esc(x.act)}</b><div class="mut">${esc(x.bed)}</div>
+  ${x.crew.map(m=>`<div>${esc(g(m,'worker'))}${g(m,'min')?` <span class="mut">${esc(mn(+g(m,'min')))}</span>`:''}${g(m,'cnt')!==''?` <span class="mut">· ${esc(g(m,'cnt'))} ${esc(String(g(m,'unit')).toLowerCase())}</span>`:''}</div>`).join('')}
+  <div class="btns"><button class="btn p" onclick="SH={k:'vt',id:'${esc(x.id)}'};draw()">Sign off</button></div></div>`).join(''):'<p class="mut">Nothing is waiting for sign-off.</p>')
+ +`<h2>Beds ready to release</h2><p class="mut" style="margin:-4px 0 8px">Final inspection passed. Release makes the bed available.</p>`
+ +(rel.length?rel.map(id=>{const t=turnOf(id),n=(t.left||[]).length;return`<div class="card ${n?'Attention':''}"><div class="r"><div class="g"><b style="font-size:18px">${esc(id)}</b><div class="mut">${esc(t.progress)} steps complete${n?' · '+n+' step'+(n>1?'s':'')+' missing (needs an override reason)':''}</div></div></div>
+  <div class="btns"><button class="btn p" onclick="SH={k:'vb',bed:'${esc(id)}'};draw()">Verify bed ready</button></div></div>`}).join(''):'<p class="mut">No bed has passed its final inspection yet.</p>')
+ +(dn.length?`<h2>Recently signed off</h2>`+dn.map(x=>`<div class="card flat"><b>${esc(x.act)}</b> <span class="mut">· ${esc(x.bed)}</span><div class="mut">✔ ${esc(x.vBy)} · ${esc(x.vAt)}${x.vNote?' · “'+esc(x.vNote)+'”':''}</div></div>`).join(''):'')}
+
+/* ---------- Harvest ---------- */
+function vHarvest(){const hs=[...(X.open||[]),...(X.done||[])].filter(s=>g(s,'act')==='Harvest');
+ return`<h1>Harvest</h1><h2 style="margin-top:6px">Ready to harvest</h2><div class="r"><input id="hq" placeholder="Bed ID, e.g. HT-B2-03 or B2" value="${esc(HQ)}" oninput="HQ=this.value;$('#hl').innerHTML=hList()" aria-label="Find bed">${'BarcodeDetector' in window?'<button class="btn" onclick="scanQR()" aria-label="Scan QR">📷</button>':''}</div><div id="hl" style="margin-top:10px">${hList()}</div>
+ <h2>Completed in the last 48 hours</h2>${hs.map(s=>sCard(s,g(s,'status')!=='DONE')).join('')||'<p class="mut">No harvests in the last 48 hours.</p>'}`}
+function hList(rd){const q=HQ.trim().toUpperCase();rd=rd||(D.cohorts||[]).filter(c=>['HARVEST_READY','HARVESTING'].includes(g(c,'status'))&&(!q||g(c,'bed').includes(q)||g(c,'bed')===parseBed(q)));
  return rd.map(c=>`<div class="card Must"><div class="r"><div class="g"><b>${esc(g(c,'bed'))} · ${esc(g(c,'cropName','crop'))}</b><div class="mut">${esc(g(c,'id'))} · planted ${esc(g(c,'dob'))} · ${esc(g(c,'cases'))} cases target · vestibule ${esc(g(c,'vest'))}</div></div><span class="tag">${esc(g(c,'status').replace('_',' '))}</span></div>
  <div class="btns"><button class="btn p" onclick="SH={k:'as',bed:'${esc(g(c,'bed'))}'};draw()">Assign harvest</button></div></div>`).join('')||'<p class="mut">No harvest-ready beds match.</p>'}
-function vScout(){const S=X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase()))),
- ch=(k,l)=>`<div class="chips">${['',...l].map(v=>`<button class="btn ${FL[k]===v?'on':''}" onclick="FL.${k}='${v}';render()">${v||'All'}</button>`).join('')}</div>`;
- return`<h1>Scouting findings</h1>${ch('sev',['HIGH','MEDIUM','LOW'])}${ch('dom',['Pest pressure','Disease','Plant condition','Soil & water','Weeds'])}<input placeholder="Filter by bed, e.g. B2" value="${esc(FL.q)}" oninput="FL.q=this.value;$('#sl').innerHTML=sList()" style="margin:6px 0 10px"><div id="sl">${sList(S)}</div>`}
-function sList(S){S=S||X.scout.filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase())));
+
+/* ---------- Turnover ---------- */
+function vTurn(){const L=Object.keys(D.beds||{}).map(id=>({id,t:turnOf(id)})).filter(x=>x.t),R={RED:0,YELLOW:1,GREEN:2},cnt=k=>L.filter(x=>x.t.sla===k).length,
+ S=L.filter(x=>TF==='ALL'||x.t.sla===TF).sort((a,b)=>R[a.t.sla]-R[b.t.sla]||b.t.days-a.t.days||a.id.localeCompare(b.id)),
+ CH=[['ALL','All',L.length],['RED','Red',cnt('RED')],['YELLOW','Yellow',cnt('YELLOW')],['GREEN','Green',cnt('GREEN')]];
+ return`<h1>Turnover</h1><p class="mut" style="margin:0 0 4px">Beds between crops, with progress against the turnover SLA.</p>
+ <div class="chips">${CH.map(c=>`<button class="btn ${TF===c[0]?'on':''}" onclick="TF='${c[0]}';render()">${c[1]}<span>${c[2]}</span></button>`).join('')}</div>`
+ +(S.length?S.map(x=>{const t=x.t,nx=(t.left||[]).slice(0,3).map(a=>a.name).join(', ');return`<div class="card ${t.sla==='RED'?'HIGH':t.sla==='YELLOW'?'MEDIUM':''}"><div class="r"><div class="g"><b style="font-size:18px">${esc(x.id)}</b><div class="mut">${esc(t.phase)} · ${esc(t.progress)} steps · day ${esc(t.days)}</div></div><span class="tag ${t.sla==='RED'?'HIGH':t.sla==='YELLOW'?'MEDIUM':''}">SLA ${esc(t.sla)}</span></div>
+  ${nx?`<div class="mut" style="margin-top:4px">Next: ${esc(nx)}${(t.left||[]).length>3?' +'+((t.left||[]).length-3)+' more':''}</div>`:''}
+  <div class="btns"><button class="btn" onclick="AF.bed='${esc(x.id)}';V='assign';render();scrollTo(0,0)">Assign task</button></div></div>`}).join(''):'<p class="mut">No beds in turnover match.</p>')}
+
+/* ---------- Scouting ---------- */
+function vScout(){const S=X.scout||[],ch=(k,l)=>`<div class="chips">${['',...l].map(v=>`<button class="btn ${FL[k]===v?'on':''}" onclick="FL.${k}='${v}';render()">${v||'All'}</button>`).join('')}</div>`;
+ return`<h1>Scouting findings</h1>${ch('sev',['HIGH','MEDIUM','LOW'])}${ch('dom',['Pest pressure','Disease','Plant condition','Soil & water','Weeds'])}<input placeholder="Filter by bed, e.g. B2" value="${esc(FL.q)}" oninput="FL.q=this.value;$('#sl').innerHTML=sList()" style="margin:6px 0 10px"><div id="sl">${sList()}</div>`}
+function sList(){const S=(X.scout||[]).filter(f=>(!FL.sev||g(f,'sev')===FL.sev)&&(!FL.dom||g(f,'domain')===FL.dom)&&(!FL.q||g(f,'bed').includes(FL.q.toUpperCase())));
  return S.map(f=>`<div class="card ${esc(g(f,'sev'))}"><div class="r"><div class="g"><b>${esc(g(f,'bed'))} · ${esc(g(f,'domain'))}</b></div><span class="tag ${esc(g(f,'sev'))}">${esc(g(f,'sev'))}</span></div><div>${esc(g(f,'notes'))}</div><div class="mut">${esc(g(f,'worker'))} · ${esc(g(f,'at'))}</div></div>`).join('')||'<p class="mut">No findings match.</p>'}
-function vLog(){return`<h1>Activity log</h1>${X.done.map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed in the last 48 hours.</p>'}`}
-function vMoves(){const all=[...X.open,...X.done,...Q()];
- return`<h1>Reassignments</h1>`+(X.moves.map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
+
+/* ---------- Log: completed work + reassignments ---------- */
+function vLog(){const all=[...(X.open||[]),...(X.done||[]),...Q()];
+ return`<h1>Log</h1><h2 style="margin-top:6px">Completed in the last 48 hours</h2>${(X.done||[]).map(s=>sCard(s,0)).join('')||'<p class="mut">Nothing completed in the last 48 hours.</p>'}
+ <h2>Reassignments</h2>`+((X.moves||[]).map(h=>{const x=/^(\S+): (.+?) -> (.+?)(?: \((.*)\))?$/.exec(g(h,'detail'))||[],it=all.find(i=>g(i,'id')===x[1]);
   return`<div class="card flat"><b>${esc(x[2]||'?')} → ${esc(x[3]||g(h,'detail'))}</b>${it?`<div>${esc(bshort(g(it,'bed')))} · ${esc(g(it,'act'))}</div>`:''}${x[4]?`<div class="mut">“${esc(x[4])}”</div>`:''}<div class="mut">by ${esc(g(h,'by'))} · ${esc(g(h,'at'))}</div></div>`}).join('')||'<p class="mut">No hand-offs logged.</p>')}
-function vLogin(){return`<div id="login"><h1>HT-ManagerApp</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
+
+/* ---------- Assign task ---------- */
+function alist(){const C=D.catalog||[],q=AF.q.toLowerCase(),L=C.filter(a=>(AF.cat==='ALL'||a.group===AF.cat)&&(!q||(a.id+' '+a.name).toLowerCase().includes(q)));
+ return L.map(a=>{const o=AF.acts.includes(a.id);return`<button class="btn ${o?'on':''}" aria-pressed="${o}" onclick="tgA('${esc(a.id)}')">${o?'☑':'☐'} ${esc(a.id)}: ${esc(a.name)}</button>`}).join('')||'<div class="mut" style="padding:8px">No activities match.</div>'}
+const wlist=()=>workers().map(w=>`<button class="btn ${AF.ws.includes(w)?'on':''}" aria-pressed="${AF.ws.includes(w)}" onclick="tgW(this.dataset.w)" data-w="${esc(w)}">${AF.ws.includes(w)?'☑':'☐'} ${esc(w)}</button>`).join('')||'<span class="mut">No active workers found.</span>';
+function tgA(id){AF.acts=AF.acts.includes(id)?AF.acts.filter(x=>x!==id):[...AF.acts,id];const l=$('#al'),y=l.scrollTop;l.innerHTML=alist();l.scrollTop=y;$('#ac').textContent=AF.acts.length}
+function tgW(w){AF.ws=AF.ws.includes(w)?AF.ws.filter(x=>x!==w):[...AF.ws,w];$('#aw').innerHTML=wlist();$('#wc').textContent=AF.ws.length}
+function vAssign(){const C=D.catalog||[],G=[...new Set(C.map(a=>a.group).filter(Boolean))];if(!AF.date)AF.date=today();
+ if(!C.length)return`<h1>Assign task</h1><p class="mut">The activity list did not load. Refresh, and make sure the latest backend is deployed.</p>`;
+ return`<h1>Assign task</h1><p class="mut" style="margin:0 0 4px">Each activity you tick becomes one crew task shared by everyone you pick.</p>
+ <label class="mut f" for="ab">Bed or tunnel</label><select id="ab" onchange="AF.bed=this.value"><option value="">Choose…</option>${bedList().map(b=>`<option ${AF.bed===b?'selected':''}>${b}</option>`).join('')}<optgroup label="Tunnel-wide">${[1,2,3,4,5,6].map(n=>`<option ${AF.bed==='HT'+n?'selected':''}>HT${n}</option>`).join('')}</optgroup></select>
+ <label class="mut f" for="ad">Date</label><input id="ad" type="date" value="${esc(AF.date)}" onchange="AF.date=this.value">
+ <label class="mut f">Workers <span id="wc">${AF.ws.length}</span> selected</label><div class="chips" id="aw">${wlist()}</div>
+ <label class="mut f">Activities <span id="ac">${AF.acts.length}</span> selected</label>
+ <div class="r"><select aria-label="Group" onchange="AF.cat=this.value;$('#al').innerHTML=alist()" style="flex:1"><option value="ALL">All groups</option>${G.map(x=>`<option ${AF.cat===x?'selected':''}>${esc(x)}</option>`).join('')}</select><input type="search" placeholder="Search activities…" value="${esc(AF.q)}" oninput="AF.q=this.value;$('#al').innerHTML=alist()" style="flex:1" aria-label="Search activities"></div>
+ <div class="list" id="al" style="margin-top:8px">${alist()}</div>
+ <label class="mut f" for="adx">What is it about? (shown to the worker, optional)</label><textarea id="adx" rows="3" oninput="AF.desc=this.value">${esc(AF.desc)}</textarea>
+ <button class="btn p" style="width:100%;margin-top:12px" onclick="assignGo()">Assign</button>`}
+async function assignGo(){const C=D.catalog||[];if(!AF.bed)return toast('Choose a bed or tunnel.');if(!AF.ws.length)return toast('Pick at least one worker.');if(!AF.acts.length)return toast('Pick at least one activity.');
+ const items=[];AF.acts.forEach(id=>{const A=C.find(a=>a.id===id);AF.ws.forEach(w=>items.push({act:A.name,actId:A.id,worker:w}))});
+ try{await api('dispatch',{bed:AF.bed,date:AF.date||today(),desc:AF.desc,items});toast('Assigned '+AF.acts.length+' task(s) to '+AF.ws.length+' worker(s)');AF=AF0();V='board';BF='ALL';await load();scrollTo(0,0)}catch(e){toast(e.message)}}
+
+/* ---------- login + sheets ---------- */
+function vLogin(){return`<div id="login"><h1>HT Manager</h1><p class="mut">High tunnels · sign in with your Worker ID and PIN.</p>${LE?`<div class="err">${esc(LE)}</div>`:''}
  <label class="mut" for="u">Worker ID</label><input id="u" autocapitalize="none" autocomplete="username"><div style="height:10px"></div><label class="mut" for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="8" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
  <button class="btn p" style="width:100%;margin-top:14px" ${busy?'disabled':''} onclick="login()">${busy?'Signing in…':'Sign in'}</button>${WEB_APP_URL||GSR()?'':'<p class="mut">Demo mode · any ID, PIN 1234</p>'}</div>`}
-function sheet(){const s=SH,ses=[...X.open,...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
+function sheet(){const s=SH,ses=[...(X.open||[]),...Q()].find(x=>g(x,'id')===s.id),W=workers().map(w=>`<option>${esc(w)}</option>`).join('');let h='';
  if(s.k==='re')h=`<h1>Reassign ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}</h1><p class="mut">Currently ${esc(g(ses,'worker'))}</p><select id="sw">${W}</select><textarea id="sn" rows="2" placeholder="Note (optional)" style="margin-top:8px"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="reDo()">Reassign</button>`;
  if(s.k==='cl')h=`<h1>Close out ${esc(g(ses,'bed'))} · ${esc(g(ses,'act'))}?</h1><p class="mut">${esc(g(ses,'worker'))}'s timer stops now.</p><textarea id="sn" rows="3" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('mClose',{id:'${esc(s.id)}',note:$('#sn').value},'Session closed')">Confirm close</button>`;
  if(s.k==='as')h=`<h1>Assign harvest · ${esc(s.bed)}</h1><select id="sw">${W}</select><label class="mut" for="sd" style="display:block;margin-top:8px">What is it about? (shown to the worker)</label><textarea id="sd" rows="3">Harvest the ready cohort, weigh each tote, then complete the session.</textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('dispatch',{bed:'${esc(s.bed)}',date:'${today()}',desc:$('#sd').value,items:[{act:'Harvest',worker:$('#sw').value}]},'Harvest assigned')">Assign</button>`;
+ if(s.k==='vt'){const x=cg().find(t=>t.id===s.id)||{crew:[]};h=`<h1>Sign off · ${esc(x.act)}</h1><p class="mut">${esc(x.bed)} · crew: ${esc(x.crew.map(m=>g(m,'worker')+(g(m,'min')?' ('+mn(+g(m,'min'))+')':'')).join(', '))}. Recorded under your name with the time.</p><textarea id="sn" rows="2" placeholder="Note (optional)"></textarea><button class="btn p" style="width:100%;margin-top:10px" onclick="act('verifyTask',{id:'${esc(s.id)}',note:$('#sn').value},'Signed off')">Sign off</button>`}
+ if(s.k==='vb'){const t=turnOf(s.bed)||{},L=t.left||[];h=`<h1>Verify bed ready · ${esc(s.bed)}</h1><p class="mut">${esc(t.progress||'')} steps complete · final inspection passed.</p>`
+  +(L.length?`<div class="rb">Missing: ${esc(L.slice(0,6).map(a=>a.name).join(', '))}${L.length>6?' +'+(L.length-6)+' more':''}</div><textarea id="sn" rows="2" placeholder="Override reason (10+ characters, logged permanently)" style="margin-top:8px"></textarea>`:'<p>Every required step is complete.</p>')
+  +`<button class="btn p" style="width:100%;margin-top:10px" onclick="relDo()">${L.length?'Release with override':'Release bed'}</button>`}
  return`<div class="ov" onclick="if(event.target===this){SH=null;draw()}"><div class="sh" role="dialog">${h}<button class="btn" style="width:100%;margin-top:8px" onclick="SH=null;draw()">Cancel</button></div></div>`}
 function reDo(){const d={id:SH.id,worker:$('#sw').value,note:$('#sn').value};act(SH.q?'mReassignTask':'mReassign',d,'Reassigned')}
+function relDo(){const b=SH.bed,n=(turnOf(b)||{left:[]}).left.length,r=$('#sn')?$('#sn').value.trim():'';if(n&&r.length<10)return toast('Steps are missing: write a reason (10+ characters).');act('verifyBed',{bed:b,override:n?r:''},n?'Bed released under override (logged)':'Bed released')}
 const draw=()=>{$('#ov').innerHTML=SH?sheet():''};
-const TABS=[['today','Today'],['ready','Harvest ready'],['complete','Harvest complete'],['log','Activity log'],['moves','Reassignments'],['scout','Scouting']];
+
+/* ---------- shell ---------- */
+const NAV=[['board','Board'],['today','Today'],['verify','Verify'],['harvest','Harvest'],['turnover','Turnover'],['scout','Scouting'],['log','Log'],['assign','Assign task']];
 function render(){const a=$('#app');if(!SESS){a.innerHTML=vLogin();return draw()}
- const v={today:vToday,ready:vReady,complete:vComplete,log:vLog,moves:vMoves,scout:vScout}[V]();
- a.innerHTML=`<header><b>HT-ManagerApp</b><span class="dot ${on?'':'off'}">${on?'● Connected':'● Offline'}</span><div class="who"><b>${esc(ME.name)}</b><small>${esc(ME.role)}</small></div><button class="btn" style="min-height:40px;padding:4px 12px" onclick="load()">Refresh</button><button class="btn" style="min-height:40px;padding:4px 12px" onclick="out()">Log out</button></header>
- <div class="tabs">${TABS.map(t=>`<button class="${V===t[0]?'on':''}" onclick="V='${t[0]}';render()">${t[1]}</button>`).join('')}</div>
- <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main>`;draw()}
+ const v={board:vBoard,today:vToday,verify:vVerify,harvest:vHarvest,turnover:vTurn,scout:vScout,log:vLog,assign:vAssign}[V](),n=todayItems().length,
+ t=last?new Date(last).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}).toLowerCase():'-',live=on&&!ERR;
+ a.innerHTML=`<header><b>HT Manager</b><button class="btn" onclick="out()">Sign out</button></header>
+ <div class="sub"><button class="live ${live?'':'off'}" onclick="load()" title="Tap to refresh"><i></i>${live?'Live':on?'Not updating':'Offline'}, updated ${t}</button><span>${esc(ME.name)}, ${esc(ME.role)}</span></div>
+ <main>${ERR?`<div class="err">${esc(ERR)}</div>`:''}${v}</main>
+ <nav>${NAV.map(x=>`<button class="${V===x[0]?'on':''}" onclick="V='${x[0]}';render();scrollTo(0,0)">${x[1]}${x[0]==='today'&&n?`<span class="bd">${n}</span>`:''}</button>`).join('')}</nav>`;draw()}
 
 /* ---------- camera QR (BarcodeDetector) ---------- */
 let cs=null,ct=0;
@@ -141,23 +231,26 @@ function camStop(){clearInterval(ct);if(cs){cs.getTracks().forEach(t=>t.stop());
 
 /* ---------- demo backend (WEB_APP_URL = '') ---------- */
 function mock(a,d){const n=now(),H=36e5;
- if(!mock.s)mock.s={D:{beds:{},workers:['lisa','Amani','Baraka','Chebet','Dawa'],tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',date:today()},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'ASSIGNED',date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',date:today()}],
+ if(!mock.s)mock.s={D:{beds:{'HT-B2-03':{status:'HARVEST_READY'},'HT-B1-02':{status:'POST_HARVEST',turn:{left:[{id:'A5',name:'Pull Plastic & Drip'}],phase:'CLEARING',progress:'18 / 19',remaining:1,total:19,days:3,sla:'YELLOW',inspected:true}},'HT-B3-01':{status:'TURNOVER',turn:{left:[{id:'A2',name:'Residue clearing'},{id:'A3',name:'Bed sanitation'}],phase:'SANITATION',progress:'6 / 19',remaining:13,total:19,days:7,sla:'RED',inspected:false}}},workers:['lisa','Amani','Baraka','Chebet','Dawa'],
+  catalog:[{id:'ACT-001',name:'Harvest',group:'Harvest',type:'ACTIVITY'},{id:'ACT-002',name:'Weeding',group:'Crop care',type:'ACTIVITY'},{id:'ACT-003',name:'Irrigation check',group:'Irrigation',type:'ACTIVITY'}],
+  tasks:[{id:'T1',bed:'HT-B2-03',act:'Harvest',worker:'Amani',status:'ASSIGNED',tstatus:'ASSIGNED',date:today()},{id:'T2',bed:'HT-B1-02',act:'Weeding',worker:'Dawa',status:'DONE',tstatus:'DONE',min:42,date:today()},{id:'T3',bed:'HT-B4-01',act:'Irrigation check',worker:'Chebet',status:'RUNNING',tstatus:'RUNNING',date:today()}],
   cohorts:[{id:'C-21',bed:'HT-B2-03',status:'HARVEST_READY',crop:'KAL',cropName:'Kale',dob:'2026-07-28',cases:40,vest:'PASS'},{id:'C-22',bed:'HT-B5-06',status:'HARVESTING',crop:'CHD',cropName:'Swiss Chard',dob:'2026-08-02',cases:30,vest:'PASS'}],
   exceptions:[{id:'X1',bed:'HT-B1-02',sev:'MEDIUM',text:'Aphids on lower leaves',open:true}]},
   X:{open:[{id:'S1',worker:'Chebet',bed:'HT-B4-01',act:'Irrigation check',status:'RUNNING',start:n-18*6e4,pausedMs:0,cohort:'C-18'},{id:'S2',worker:'Baraka',bed:'HT-B5-06',act:'Harvest',status:'PAUSED',reason:'Lunch',start:n-95*6e4,pausedMs:0,pauseAt:n-20*6e4,cohort:'C-22'}],
   done:[{id:'S0',worker:'Dawa',bed:'HT-B3-02',act:'Weeding',status:'DONE',start:n-5*H,end:n-4*H,pausedMs:0}],
-  scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[],queue:[{id:'T9',worker:'lisa',bed:'HT-B1-02',act:'Pull Plastic & Drip',desc:'Remove subsurface drip tape, black plastic mulch, stakes, and trellising from the harvested bed using the appropriate tractor-mounted lifter/winder or other ranch equipment.',assignedBy:'Chris Kenny',status:'ASSIGNED',date:today()}]}};
+  scout:[{id:'F1',bed:'HT-B1-02',domain:'Pest pressure',sev:'MEDIUM',notes:'Aphids on lower leaves, spot-treat.',worker:'Dawa',at:'today 08:41'},{id:'F2',bed:'HT-B4-01',domain:'Soil & water',sev:'HIGH',notes:'Drip line leak near row 3.',worker:'Chebet',at:'today 07:15'}],moves:[],queue:[{id:'T9',worker:'lisa',bed:'HT-B1-02',act:'Pull Plastic & Drip',desc:'Remove subsurface drip tape, black plastic mulch, stakes, and trellising from the harvested bed.',assignedBy:'Chris Kenny',status:'ASSIGNED',date:today()}]}};
  const m=mock.s;
  if(a==='login'){if(d.pin!=='1234')throw new Error('Wrong ID or PIN');return{ok:true,session:'demo',user:{name:'Chris Kenny',role:'Manager'},data:m.D}}
  if(a==='mReassign'||a==='mReassignTask'){const s=[...m.X.open,...m.X.queue].find(x=>x.id===d.id);if(s){const from=s.worker;s.worker=d.worker;s.re={from,to:d.worker,by:'Chris Kenny',note:d.note};m.X.moves.unshift({at:'now',by:'Chris Kenny',detail:d.id+': '+from+' -> '+d.worker+(d.note?' ('+d.note+')':'')})}}
  if(a==='mClose'){const i=m.X.open.findIndex(x=>x.id===d.id);if(i>=0){const s=m.X.open.splice(i,1)[0];s.status='DONE';s.end=n;m.X.done.unshift(s)}}
- if(a==='dispatch')d.items.forEach(i=>m.D.tasks.push({id:'T'+n,bed:d.bed,act:i.act,worker:i.worker,status:'ASSIGNED',date:d.date}));
- if(a==='taskAction'){const t=m.X.queue.find(x=>x.id===d.id);if(t)t.worker=d.worker}
+ if(a==='dispatch')d.items.forEach(i=>m.X.queue.push({id:'T'+n+Math.random().toString(36).slice(2,5),bed:d.bed,act:i.act,worker:i.worker,status:'ASSIGNED',date:d.date,desc:d.desc,assignedBy:'Chris Kenny'}));
+ if(a==='verifyTask'){m.D.tasks.forEach(t=>{if(t.id===d.id){t.vBy='Chris Kenny';t.vAt='now'}})}
+ if(a==='verifyBed'){delete m.D.beds[d.bed].turn;m.D.beds[d.bed].status='AVAILABLE'}
  return{ok:true,data:m.D,x:m.X}}
 
 addEventListener('online',()=>{on=true;load()});addEventListener('offline',()=>{on=false;render()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
-setInterval(()=>document.querySelectorAll('[data-t]').forEach(e=>{const s=[...X.open,...X.done].find(x=>g(x,'id')===e.dataset.t);if(s)e.textContent=fmt(el(s))}),1000);
+setInterval(()=>document.querySelectorAll('[data-t]').forEach(e=>{const s=[...(X.open||[]),...(X.done||[])].find(x=>g(x,'id')===e.dataset.t);if(s)e.textContent=fmt(el(s))}),1000);
 setInterval(()=>{const f=document.activeElement;if(SESS&&!document.hidden&&!SH&&!(f&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))load()},BOARD_REFRESH_MS);
 render();
 </script></body></html>
